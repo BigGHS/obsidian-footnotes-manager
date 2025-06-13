@@ -1,4 +1,4 @@
-// main.ts - Complete Footnotes Manager Plugin - FIXED VERSION
+// main.ts - Complete Footnotes Manager Plugin
 import { 
 	App, 
 	Editor, 
@@ -145,8 +145,6 @@ class FootnotesView extends ItemView {
 	private renderedGroups: RenderedGroup[] = [];
 	private isCollapsed: boolean = false;
 	private hasManualExpansions: boolean = false;
-	private isNavigating: boolean = false; // ADDED: Track navigation state
-	private pendingNavigation: string | null = null; // ADDED: Track pending navigation
 
 	constructor(leaf: WorkspaceLeaf, plugin: FootnotesManagerPlugin) {
 		super(leaf);
@@ -183,42 +181,6 @@ class FootnotesView extends ItemView {
 	refresh() {
 		this.debug('FootnotesView.refresh called');
 		
-		// ENHANCED: Multiple levels of skip checking
-		const now = Date.now();
-		const skipCheckTimestamp = (this as any).skipCheckTimestamp || 0;
-		const lastRefreshCheck = (this as any).lastRefreshCheck || 0;
-		const timeSinceSkipCheck = now - skipCheckTimestamp;
-		const timeSinceLastRefresh = now - lastRefreshCheck;
-		
-		// Check plugin skip conditions
-		if (this.plugin.skipNextRefresh || now < this.plugin.skipRefreshUntil) {
-			this.debug('Skipping FootnotesView refresh due to plugin skip flags, skipNextRefresh:', this.plugin.skipNextRefresh, 'now:', now, 'skipUntil:', this.plugin.skipRefreshUntil);
-			return;
-		}
-		
-		// ENHANCED: Additional protection - if this refresh was called very recently after a skip check, 
-		// it might be from a different event source during the skip period
-		if (timeSinceSkipCheck < 100 && this.plugin.skipRefreshUntil > now - 2000) {
-			this.debug('Skipping FootnotesView refresh - too soon after skip check, likely from different event source');
-			return;
-		}
-		
-		// ENHANCED: Don't refresh if we're in the middle of navigation (check both local and global state)
-		if (this.isNavigating || this.plugin.isNavigating) {
-			this.debug('Skipping FootnotesView refresh - currently navigating (local:', this.isNavigating, 'global:', this.plugin.isNavigating, ')');
-			return;
-		}
-		
-		// ENHANCED: Prevent rapid-fire refreshes (minimum 100ms between refreshes during potential navigation periods)
-		if (timeSinceLastRefresh < 100 && this.plugin.skipRefreshUntil > now - 3000) {
-			this.debug('Skipping FootnotesView refresh - too frequent, timeSinceLastRefresh:', timeSinceLastRefresh);
-			return;
-		}
-		
-		// Set the last refresh timestamp
-		(this as any).lastRefreshCheck = now;
-		
-		this.debug('Proceeding with FootnotesView refresh');
 		const container = this.containerEl.children[1];
 		container.empty();
 
@@ -279,133 +241,64 @@ class FootnotesView extends ItemView {
 		});
 		clearSearchBtn.innerHTML = '×';
 
-		// FIXED: Get active file and set up navigation immediately
-		let activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		let currentFile = this.app.workspace.getActiveFile();
-		
-		this.debug('Active view:', !!activeView, 'Current file:', !!currentFile);
-		
-		// Try to find the correct editor for the current file
-		if (!activeView && currentFile) {
-			const leaves = this.app.workspace.getLeavesOfType('markdown');
-			for (const leaf of leaves) {
-				const view = leaf.view as MarkdownView;
-				if (view.file === currentFile) {
-					activeView = view;
-					this.debug('Found view for current file');
-					break;
+		// Get active file content with a small delay to ensure proper focus
+		setTimeout(() => {
+			this.debug('Executing delayed refresh check');
+			
+			let activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			let currentFile = this.app.workspace.getActiveFile();
+			
+			this.debug('Active view:', !!activeView, 'Current file:', !!currentFile);
+			
+			if (!activeView && currentFile) {
+				const leaves = this.app.workspace.getLeavesOfType('markdown');
+				for (const leaf of leaves) {
+					const view = leaf.view as MarkdownView;
+					if (view.file === currentFile) {
+						activeView = view;
+						this.debug('Found view for current file');
+						break;
+					}
 				}
 			}
-		}
-		
-		// Use stored current file if available
-		if (!activeView && this.currentFile) {
-			this.debug('Using stored current file');
-			currentFile = this.currentFile;
-			const leaves = this.app.workspace.getLeavesOfType('markdown');
-			for (const leaf of leaves) {
-				const view = leaf.view as MarkdownView;
-				if (view.file === currentFile) {
-					activeView = view;
-					break;
-				}
+			
+			if (!activeView && this.currentFile) {
+				this.debug('Using stored current file');
+				currentFile = this.currentFile;
 			}
-		}
-		
-		if (currentFile) {
-			this.currentFile = currentFile;
-		}
-
-		// FIXED: Set up navigation button handlers immediately with proper context
-		this.setupNavigationButtons(navBtn, returnBtn, renumberBtn, activeView, currentFile);
-
-		// Get content and process footnotes
-		if (!activeView && !currentFile) {
-			this.debug('No active markdown view or file found');
-			container.createEl('div', { 
-				text: 'No active markdown file', 
-				cls: 'footnotes-empty' 
-			});
 			
-			this.disableControls(toggleAllBtn, navBtn, returnBtn, renumberBtn, searchInput);
-			return;
-		}
+			if (!activeView && !currentFile) {
+				this.debug('No active markdown view or file found');
+				container.createEl('div', { 
+					text: 'No active markdown file', 
+					cls: 'footnotes-empty' 
+				});
+				
+				toggleAllBtn.disabled = true;
+				navBtn.disabled = true;
+				returnBtn.disabled = true;
+				renumberBtn.disabled = true;
+				return;
+			}
 
-		this.debug('Getting file content');
-		let content = '';
-		
-		if (activeView) {
-			content = activeView.editor.getValue();
-			this.debug('Got content from active view');
-			this.processFootnotes(content, container, toggleAllBtn, toggleIcon, searchInput, clearSearchBtn, navBtn, returnBtn, renumberBtn);
-		} else if (currentFile) {
-			this.app.vault.read(currentFile).then(fileContent => {
-				this.debug('Got content from file read');
-				this.processFootnotes(fileContent, container, toggleAllBtn, toggleIcon, searchInput, clearSearchBtn, navBtn, returnBtn, renumberBtn);
-			});
-		}
-	}
+			if (currentFile) {
+				this.currentFile = currentFile;
+			}
 
-	// FIXED: New method to set up navigation buttons with proper context
-	private setupNavigationButtons(
-		navBtn: HTMLButtonElement, 
-		returnBtn: HTMLButtonElement, 
-		renumberBtn: HTMLButtonElement,
-		activeView: MarkdownView | null,
-		currentFile: TFile | null
-	) {
-		navBtn.onclick = (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.debug('Nav button clicked with activeView:', !!activeView, 'currentFile:', !!currentFile);
+			this.debug('Getting file content');
+			let content = '';
 			
-			// ENHANCED: Use robust skip period
-			this.plugin.setSkipRefreshPeriod(1000);
-			
-			setTimeout(() => {
-				this.plugin.jumpToFootnotesSection();
-			}, 10);
-		};
-
-		returnBtn.onclick = (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.debug('Return button clicked with activeView:', !!activeView, 'currentFile:', !!currentFile);
-			
-			// ENHANCED: Use robust skip period
-			this.plugin.setSkipRefreshPeriod(1000);
-			
-			setTimeout(() => {
-				this.plugin.returnToLastEditPosition();
-			}, 10);
-		};
-
-		renumberBtn.onclick = (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			this.debug('Renumber button clicked with activeView:', !!activeView, 'currentFile:', !!currentFile);
-			
-			// ENHANCED: Use robust skip period
-			this.plugin.setSkipRefreshPeriod(1000);
-			
-			setTimeout(() => {
-				this.plugin.renumberFootnotes();
-			}, 10);
-		};
-	}
-
-	private disableControls(
-		toggleBtn?: HTMLButtonElement, 
-		navBtn?: HTMLButtonElement, 
-		returnBtn?: HTMLButtonElement, 
-		renumberBtn?: HTMLButtonElement,
-		searchInput?: HTMLInputElement
-	) {
-		if (toggleBtn) toggleBtn.disabled = true;
-		if (navBtn) navBtn.disabled = true;
-		if (returnBtn) returnBtn.disabled = true;
-		if (renumberBtn) renumberBtn.disabled = true;
-		if (searchInput) searchInput.disabled = true;
+			if (activeView) {
+				content = activeView.editor.getValue();
+				this.debug('Got content from active view');
+				this.processFootnotes(content, container, toggleAllBtn, toggleIcon, searchInput, clearSearchBtn, navBtn, returnBtn, renumberBtn);
+			} else if (currentFile) {
+				this.app.vault.read(currentFile).then(fileContent => {
+					this.debug('Got content from file read');
+					this.processFootnotes(fileContent, container, toggleAllBtn, toggleIcon, searchInput, clearSearchBtn, navBtn, returnBtn, renumberBtn);
+				});
+			}
+		}, 10);
 	}
 
 	private processFootnotes(
@@ -443,7 +336,11 @@ class FootnotesView extends ItemView {
 				cls: 'footnotes-empty' 
 			});
 			
-			this.disableControls(toggleBtn, navBtn, returnBtn, renumberBtn, searchInput);
+			if (toggleBtn) toggleBtn.disabled = true;
+			if (searchInput) searchInput.disabled = true;
+			if (navBtn) navBtn.disabled = true;
+			if (returnBtn) returnBtn.disabled = true;
+			if (renumberBtn) renumberBtn.disabled = true;
 			return;
 		}
 
@@ -453,6 +350,30 @@ class FootnotesView extends ItemView {
 		if (navBtn) navBtn.disabled = false;
 		if (returnBtn) returnBtn.disabled = false;
 		if (renumberBtn) renumberBtn.disabled = false;
+
+		// Set up navigation button event handlers
+		if (navBtn) {
+		    navBtn.onclick = (e) => {
+		        e.preventDefault();
+		        e.stopPropagation();
+		        this.plugin.jumpToFootnotesSection();
+		    };
+		}
+
+		if (returnBtn) {
+		    returnBtn.onclick = (e) => {
+		        e.preventDefault();
+		        e.stopPropagation();
+		        this.plugin.returnToLastEditPosition();
+		    };
+		}
+		if (renumberBtn) {
+			renumberBtn.onclick = (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.plugin.renumberFootnotes();
+			};
+		}
 
 		const footnotesList = container.createEl('div', { cls: 'footnotes-list' });
 
@@ -871,30 +792,7 @@ class FootnotesView extends ItemView {
 				
 				refEl.addEventListener('click', (e) => {
 					e.stopPropagation();
-					
-					// ENHANCED: Set pending navigation and execute immediately + delayed
-					const navId = `reference-${footnote.number}-${index}`;
-					this.pendingNavigation = navId;
-					this.plugin.setSkipRefreshPeriod(2000);
-					
-					// Execute navigation immediately
 					this.plugin.highlightFootnoteInEditor(footnote, index);
-					
-					// ENHANCED: Also set up delayed execution in case the immediate one gets interrupted
-					setTimeout(() => {
-						if (this.pendingNavigation === navId) {
-							this.debug('Executing delayed navigation for reference:', footnote.number, index);
-							this.plugin.highlightFootnoteInEditor(footnote, index);
-							this.pendingNavigation = null;
-						}
-					}, 50);
-					
-					// Clear pending navigation after delay
-					setTimeout(() => {
-						if (this.pendingNavigation === navId) {
-							this.pendingNavigation = null;
-						}
-					}, 1000);
 				});
 			});
 		}
@@ -1074,28 +972,12 @@ class FootnotesView extends ItemView {
 			e.preventDefault();
 			e.stopPropagation();
 
-			// ENHANCED: Set pending navigation to ensure it happens even if refresh occurs
-			this.pendingNavigation = `footnote-${footnote.number}`;
-			this.plugin.setSkipRefreshPeriod(2000);
-			
-			// Execute navigation immediately and also set up delayed execution
+			this.plugin.skipNextRefresh = true;
 			this.jumpToFootnoteDefinition(footnote);
-			
-			// ENHANCED: Also set up delayed execution in case the immediate one gets interrupted
+
 			setTimeout(() => {
-				if (this.pendingNavigation === `footnote-${footnote.number}`) {
-					this.debug('Executing delayed navigation for footnote:', footnote.number);
-					this.jumpToFootnoteDefinition(footnote);
-					this.pendingNavigation = null;
-				}
-			}, 50);
-			
-			// Clear pending navigation after a reasonable delay
-			setTimeout(() => {
-				if (this.pendingNavigation === `footnote-${footnote.number}`) {
-					this.pendingNavigation = null;
-				}
-			}, 1000);
+			    this.plugin.skipNextRefresh = false;
+			}, 300);
 		});
 
 		footnoteEl.addEventListener('mouseleave', () => {
@@ -1295,50 +1177,47 @@ class FootnotesView extends ItemView {
 	}
 	
 	private jumpToFootnoteDefinition(footnote: FootnoteData) {
-		    this.debug('jumpToFootnoteDefinition called for footnote:', footnote.number);
-	    
-		    let activeEditor: Editor | null = null;
+	    let activeEditor: Editor | null = null;
     
-		    // Get the correct editor for the current file
-		    let currentFile = this.app.workspace.getActiveFile();
-		    if (!currentFile && this.currentFile) {
-		        currentFile = this.currentFile;
-		    }
+	    // Get the correct editor for the current file
+	    let currentFile = this.app.workspace.getActiveFile();
+	    if (!currentFile && this.currentFile) {
+	        currentFile = this.currentFile;
+	    }
     
-		    if (currentFile) {
-		        const leaves = this.app.workspace.getLeavesOfType('markdown');
-		        for (const leaf of leaves) {
-		            const view = leaf.view as MarkdownView;
-		            if (view.file === currentFile) {
-		                activeEditor = view.editor;
-		                break;
-		            }
-		        }
-		    }
+	    if (currentFile) {
+	        const leaves = this.app.workspace.getLeavesOfType('markdown');
+	        for (const leaf of leaves) {
+	            const view = leaf.view as MarkdownView;
+	            if (view.file === currentFile) {
+	                activeEditor = view.editor;
+	                break;
+	            }
+	        }
+	    }
     
-		    if (!activeEditor) {
-		        new Notice('Could not find editor to navigate to footnote');
-		        return;
-		    }
+	    if (!activeEditor) {
+	        new Notice('Could not find editor to navigate to footnote');
+	        return;
+	    }
     
-		    // Navigate to the footnote definition immediately
-		    const content = activeEditor.getValue();
-		    const lines = content.split('\n');
+	    // Navigate to the footnote definition
+	    const content = activeEditor.getValue();
+	    const lines = content.split('\n');
     
-		    for (let i = 0; i < lines.length; i++) {
-		        const line = lines[i];
-		        if (line.match(new RegExp(`^\\s*\\[\\^${footnote.number}\\]:`))) {
-		            this.debug('Found footnote definition at line:', i);
-		            activeEditor.setCursor({ line: i, ch: 0 });
-		            activeEditor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
-		            activeEditor.focus();
-		            new Notice(`Jumped to footnote [${footnote.number}] definition`);
-		            return;
-		        }
-		    }
+	    for (let i = 0; i < lines.length; i++) {
+	        const line = lines[i];
+	        if (line.match(new RegExp(`^\\s*\\[\\^${footnote.number}\\]:`))) {
+	            activeEditor.setCursor({ line: i, ch: 0 });
+	            activeEditor.scrollIntoView({ from: { line: i, ch: 0 }, to: { line: i, ch: 0 } }, true);
+	            activeEditor.focus();
+	            new Notice(`Jumped to footnote [${footnote.number}] definition`);
+	            return;
+	        }
+	    }
     
-		    new Notice(`Could not find definition for footnote [${footnote.number}]`);
-		}
+	    new Notice(`Could not find definition for footnote [${footnote.number}]`);
+	}
 }
 
 export default class FootnotesManagerPlugin extends Plugin {
@@ -1347,8 +1226,6 @@ export default class FootnotesManagerPlugin extends Plugin {
 	public skipNextRefresh: boolean = false;
 	private allHeaders: HeaderData[] = [];
 	private lastEditPosition: EditorPosition | null = null;
-	public skipRefreshUntil: number = 0; // ADDED: Timestamp-based skip mechanism
-	public isNavigating: boolean = false; // ADDED: Global navigation state
 
 	private debug(message: string, ...args: any[]) {
 		if (this.settings.debugMode) {
@@ -1412,27 +1289,18 @@ export default class FootnotesManagerPlugin extends Plugin {
 		// Listen for file changes to update footnotes panel
 		this.registerEvent(
 			this.app.workspace.on('active-leaf-change', () => {
-				// ENHANCED: Check all skip conditions including global navigation state
-				if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
-					this.debug('Skipping refresh on active-leaf-change due to skip flags, skipNextRefresh:', this.skipNextRefresh, 'isNavigating:', this.isNavigating);
-					return;
-				}
 				this.refreshFootnotesView();
 			})
 		);
 
 		// Listen for editor changes
 		this.registerEvent(
-			this.app.workspace.on('editor-change', (editor: Editor) => {
-				// FIXED: Don't refresh on every editor change, only on content changes
-				// This prevents unnecessary refreshes when buttons are clicked
-				if (!this.skipNextRefresh) {
-					this.debounceRefresh();
-				}
+			this.app.workspace.on('editor-change', () => {
+				this.debounceRefresh();
 			})
 		);
 
-		// FIXED: Track cursor position separately without triggering refresh
+		// Track cursor position for "return to edit position" feature
 		this.registerEvent(
 			this.app.workspace.on('editor-change', (editor: Editor) => {
 				if (!this.skipNextRefresh) {
@@ -1699,17 +1567,8 @@ export default class FootnotesManagerPlugin extends Plugin {
 	            new Notice('Returned to last edit position');
 	            this.debug('Successfully returned to position:', this.lastEditPosition);
 	        } else {
-	            // ENHANCEMENT: No stored position, find first editable line after frontmatter
-	            this.debug('No lastEditPosition stored, finding first editable line');
-	            const firstEditableLine = this.findFirstEditableLine(activeEditor);
-	            const defaultPosition = { line: firstEditableLine, ch: 0 };
-	            
-	            activeEditor.setCursor(defaultPosition);
-	            activeEditor.scrollIntoView({ from: defaultPosition, to: defaultPosition }, true);
-	            activeEditor.focus();
-            
-	            new Notice('Jumped to start of content');
-	            this.debug('Moved to first editable line:', firstEditableLine);
+	            new Notice('No previous edit position saved');
+	            this.debug('No lastEditPosition stored');
 	        }
 	    } catch (error) {
 	        this.debug('Error in returnToLastEditPosition:', error);
@@ -1717,72 +1576,12 @@ export default class FootnotesManagerPlugin extends Plugin {
 	    }
 	}
 	
-	// ENHANCEMENT: Helper method to find first editable line after frontmatter/properties
-	private findFirstEditableLine(editor: Editor): number {
-		const content = editor.getValue();
-		const lines = content.split('\n');
-		
-		this.debug('Finding first editable line in document with', lines.length, 'lines');
-		
-		// Check if document starts with frontmatter (YAML properties)
-		if (lines[0] && lines[0].trim() === '---') {
-			this.debug('Document starts with frontmatter, looking for end');
-			
-			// Find the closing --- of frontmatter
-			for (let i = 1; i < lines.length; i++) {
-				if (lines[i].trim() === '---') {
-					this.debug('Found end of frontmatter at line', i);
-					
-					// Skip any empty lines after frontmatter
-					for (let j = i + 1; j < lines.length; j++) {
-						if (lines[j].trim() !== '') {
-							this.debug('First content line after frontmatter:', j);
-							return j;
-						}
-					}
-					
-					// If no content found after frontmatter, return line after frontmatter
-					return i + 1;
-				}
-			}
-			
-			// If frontmatter doesn't have closing ---, return after first line
-			this.debug('Frontmatter missing closing ---, defaulting to line 1');
-			return 1;
-		}
-		
-		// No frontmatter, find first non-empty line
-		for (let i = 0; i < lines.length; i++) {
-			if (lines[i].trim() !== '') {
-				this.debug('First non-empty line found at:', i);
-				return i;
-			}
-		}
-		
-		// Document is empty or all whitespace, return line 0
-		this.debug('Document appears empty, defaulting to line 0');
-		return 0;
-	}
-	
-	// ADDED: Helper method to set skip period more robustly
-	public setSkipRefreshPeriod(milliseconds: number = 1000) {
-		this.skipNextRefresh = true;
-		this.skipRefreshUntil = Date.now() + milliseconds;
-		this.debug('Set skip refresh period until:', this.skipRefreshUntil);
-		
-		// Clear the boolean flag after the period ends
-		setTimeout(() => {
-			this.skipNextRefresh = false;
-			this.debug('Cleared skipNextRefresh flag');
-		}, milliseconds);
-	}
-	
 	debounceRefresh() {
-		this.debug('debounceRefresh called, skipNextRefresh:', this.skipNextRefresh, 'skipRefreshUntil:', this.skipRefreshUntil, 'isNavigating:', this.isNavigating, 'now:', Date.now());
+		this.debug('debounceRefresh called, skipNextRefresh:', this.skipNextRefresh);
 		
-		// ENHANCED: Check all skip conditions including global navigation state
-		if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
-			this.debug('Skipping refresh due to skip flags');
+		if (this.skipNextRefresh) {
+			this.debug('Skipping refresh due to skipNextRefresh flag');
+			this.skipNextRefresh = false;
 			return;
 		}
 		
@@ -1790,11 +1589,6 @@ export default class FootnotesManagerPlugin extends Plugin {
 			window.clearTimeout(this.refreshTimeout);
 		}
 		this.refreshTimeout = window.setTimeout(() => {
-			// Double-check skip conditions before actually refreshing
-			if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
-				this.debug('Skipping delayed refresh due to skip flags');
-				return;
-			}
 			this.debug('Executing delayed refresh');
 			this.refreshFootnotesView();
 		}, 500);
@@ -1820,29 +1614,18 @@ export default class FootnotesManagerPlugin extends Plugin {
 	}
 
 	refreshFootnotesView() {
-		// ENHANCED: Check all skip conditions including global navigation state
-		if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
-			this.debug('Skipping footnotes view refresh due to skip flags, skipNextRefresh:', this.skipNextRefresh, 'now:', Date.now(), 'skipUntil:', this.skipRefreshUntil, 'isNavigating:', this.isNavigating);
-			return;
-		}
-		
-		this.debug('Proceeding with footnotes view refresh');
 		const leaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
 		leaves.forEach(leaf => {
 			if (leaf.view instanceof FootnotesView) {
-				// ENHANCED: Pass skip info to the view and set a protection flag
-				(leaf.view as any).skipCheckTimestamp = Date.now();
-				(leaf.view as any).lastRefreshCheck = Date.now();
 				leaf.view.refresh();
 			}
 		});
 	}
 
-	// FIXED: Improved extractFootnotes method to properly exclude definitions from references
 	extractFootnotes(content: string): FootnoteData[] {
 		const footnoteMap = new Map<string, FootnoteData>();
 		
-		// Extract footnote definitions first
+		// Extract footnote definitions
 		const definitionRegex = /^\[\^([\w-]+)\]:\s*(.*)$/gm;
 		let match;
 		while ((match = definitionRegex.exec(content)) !== null) {
@@ -1872,25 +1655,17 @@ export default class FootnotesManagerPlugin extends Plugin {
 			});
 		}
 
-		// FIXED: Extract footnote references with better exclusion of definitions
+		// Extract footnote references
 		const referenceRegex = /\[\^([\w-]+)\]/g;
 		while ((match = referenceRegex.exec(content)) !== null) {
 			const number = match[1];
 			const startPos = match.index;
 			const endPos = match.index + match[0].length;
 			
-			// FIXED: Better check to exclude definitions
-			// Check if this match is actually a definition by looking at the context
-			const beforeMatch = content.substring(Math.max(0, startPos - 10), startPos);
-			const afterMatch = content.substring(endPos, endPos + 2);
-			
-			// Skip if this is at the start of a line (possibly with whitespace) and followed by ':'
-			// This indicates it's a definition, not a reference
-			const lineStart = beforeMatch.lastIndexOf('\n');
-			const textBeforeOnLine = lineStart >= 0 ? beforeMatch.substring(lineStart + 1) : beforeMatch;
-			
-			if (textBeforeOnLine.trim() === '' && afterMatch.startsWith(':')) {
-				this.debug('Skipping footnote definition (not a reference):', match[0]);
+			// Skip if this is a definition (check if preceded by ] and followed by :)
+			const beforeMatch = content.substring(Math.max(0, startPos - 1), startPos);
+			const afterMatch = content.substring(endPos, endPos + 1);
+			if (beforeMatch === ']' && afterMatch === ':') {
 				continue;
 			}
 			
@@ -1908,20 +1683,10 @@ export default class FootnotesManagerPlugin extends Plugin {
 			if (footnoteMap.has(number)) {
 				footnoteMap.get(number)!.references.push(reference);
 				footnoteMap.get(number)!.referenceCount++;
-				this.debug('Added reference for footnote', number, 'at line', line + 1);
-			} else {
-				this.debug('Found reference for footnote', number, 'but no definition exists');
 			}
 		}
 
-		const result = Array.from(footnoteMap.values()).filter(f => f.definition);
-		this.debug('Final footnote extraction results:', result.map(f => ({
-			number: f.number,
-			referenceCount: f.referenceCount,
-			references: f.references.map(r => `line ${r.line + 1}`)
-		})));
-		
-		return result;
+		return Array.from(footnoteMap.values()).filter(f => f.definition);
 	}
 
 	extractHeaders(content: string): HeaderData[] {
@@ -2072,7 +1837,6 @@ export default class FootnotesManagerPlugin extends Plugin {
 			return;
 		}
 
-		// FIXED: Don't use skipNextRefresh here, since it's already set by caller
 		this.app.workspace.getLeaf().openFile(file).then(() => {
 			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (!activeView) return;
@@ -2105,6 +1869,11 @@ export default class FootnotesManagerPlugin extends Plugin {
 			);
 			editor.focus();
 		});
+
+		this.skipNextRefresh = true;
+		setTimeout(() => {
+			this.skipNextRefresh = false;
+		}, 200);
 	}
 
 	highlightHeaderInEditor(header: HeaderData) {

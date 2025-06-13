@@ -1,8 +1,614 @@
 /*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
+Footnotes Manager - Enhanced with navigation and renumbering features
 */
+
+/* Panel Styles */
+.footnotes-header {
+	padding: 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.footnotes-title {
+	margin: 0;
+	color: var(--text-normal);
+}
+
+.footnotes-empty {
+	padding: 20px;
+	text-align: center;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.footnotes-list {
+	padding: 5px;
+}
+
+/* Header Section Styles */
+.footnote-header-section {
+	margin-bottom: 4px;
+}
+
+.footnote-header {
+	display: flex;
+	align-items: center;
+	padding: 4px 8px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	margin-bottom: 2px;
+	font-weight: 500;
+	color: var(--text-normal);
+	font-size: 13px;
+	transition: background-color 0.1s ease;
+}
+
+.footnote-header:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.footnote-collapse-icon {
+	margin-right: 6px;
+	cursor: pointer;
+	user-select: none;
+	font-size: 10px;
+	color: var(--text-muted);
+	min-width: 12px;
+	transition: color 0.1s ease;
+}
+
+.footnote-collapse-icon:hover {
+	color: var(--text-normal);
+}
+
+.footnote-header-text {
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.footnote-group-content {
+	transition: all 0.2s ease;
+}
+
+.footnote-group-footnotes {
+	margin-left: 20px;
+	border-left: 2px solid var(--background-modifier-border);
+	padding-left: 8px;
+	margin-top: 4px;
+}
+
+/* Individual Footnote Styles */
+.footnote-item {
+	padding: 12px;
+	margin: 4px 0;
+	border-radius: 6px;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: all 0.1s ease;
+	position: relative;
+	background-color: var(--background-primary);
+}
+
+.footnote-item:hover:not(.footnote-editing),
+.footnote-item-hover {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.footnote-item.footnote-editing {
+	background-color: var(--background-modifier-form-field);
+	border-color: var(--interactive-accent);
+	cursor: default;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Footnote Header Info */
+.footnote-header-info {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.footnote-number {
+	font-weight: 600;
+	color: var(--interactive-accent);
+	font-size: 14px;
+	background-color: var(--background-secondary);
+	padding: 2px 6px;
+	border-radius: 3px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.footnote-ref-count {
+	color: var(--text-muted);
+	font-size: 11px;
+	background-color: var(--background-secondary);
+	padding: 1px 4px;
+	border-radius: 2px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.footnote-content {
+	line-height: 1.5;
+	margin-bottom: 8px;
+}
+
+.footnote-text {
+	color: var(--text-normal);
+	font-size: 14px;
+	margin-bottom: 8px;
+	word-wrap: break-word;
+	border-radius: 3px;
+	padding: 4px 6px;
+	min-height: 20px;
+	white-space: pre-wrap;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.footnote-text[contenteditable="true"]:focus {
+	outline: 1px solid var(--interactive-accent);
+	background-color: var(--background-primary);
+}
+
+.footnote-textarea {
+	width: 100%;
+	min-height: 60px;
+	resize: vertical;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	padding: 6px 8px;
+	font-family: var(--font-text);
+	font-size: 14px;
+	line-height: 1.4;
+	color: var(--text-normal);
+	background-color: var(--background-primary);
+	transition: border-color 0.1s ease;
+	box-sizing: border-box;
+}
+
+.footnote-textarea:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	background-color: var(--background-primary);
+}
+
+.footnote-editing .footnote-textarea {
+	border-color: var(--interactive-accent);
+	background-color: var(--background-modifier-form-field);
+}
+
+/* References Section */
+.footnote-references {
+	margin: 8px 0;
+	padding: 6px 8px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.footnote-references-label {
+	display: block;
+	font-size: 11px;
+	color: var(--text-muted);
+	margin-bottom: 4px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.footnote-reference-btn {
+	margin: 2px 4px 2px 0;
+	padding: 2px 6px;
+	font-size: 11px;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+}
+
+.footnote-reference-btn:hover {
+	background-color: var(--interactive-accent-hover);
+	transform: translateY(-1px);
+}
+
+.footnote-reference-btn:active {
+	transform: translateY(0);
+}
+
+.footnote-actions {
+	display: flex;
+	gap: 6px;
+	justify-content: flex-end;
+	margin-top: 8px;
+	flex-wrap: wrap;
+}
+
+.footnote-btn {
+	padding: 4px 10px;
+	font-size: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.footnote-save-btn {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.footnote-save-btn:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+.footnote-cancel-btn {
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.footnote-cancel-btn:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.footnote-delete-btn {
+	background-color: var(--background-secondary);
+	color: var(--text-error);
+	border-color: var(--background-modifier-border);
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.footnote-delete-btn:hover {
+	background-color: var(--background-modifier-error);
+	border-color: var(--text-error);
+	transform: translateY(-1px);
+}
+
+.footnote-delete-btn:active {
+	transform: translateY(0);
+}
+
+/* Title Row and Controls */
+.footnotes-title-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.footnotes-title {
+	flex: 1;
+	text-align: left;
+}
+
+.footnotes-controls {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+/* Navigation and Control Button Styles */
+.footnotes-control-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+}
+
+.footnotes-control-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+	transform: translateY(-1px);
+}
+
+.footnotes-control-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-control-btn:active:not(:disabled) {
+	background: var(--background-modifier-active);
+	transform: translateY(1px);
+}
+
+/* Specific button styles */
+.nav-btn svg {
+	color: var(--color-accent);
+}
+
+.return-btn svg {
+	color: var(--color-green);
+}
+
+.renumber-btn svg {
+	color: var(--color-orange);
+}
+
+/* Toggle Button Styles */
+.footnotes-toggle-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+}
+
+.footnotes-toggle-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.footnotes-toggle-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-toggle-btn:active:not(:disabled) {
+	background: var(--background-modifier-active);
+	transform: translateY(1px);
+}
+
+.footnotes-toggle-icon {
+	font-size: 18px;
+	font-weight: bold;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+}
+
+.footnotes-toggle-btn:hover .footnotes-toggle-icon {
+	color: var(--text-normal);
+}
+
+/* Search functionality styles */
+.footnotes-search-container {
+	position: relative;
+	margin-bottom: 8px;
+}
+
+.footnotes-search-input {
+	width: 100%;
+	padding: 6px 30px 6px 8px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	font-size: 13px;
+	transition: border-color 0.1s ease;
+}
+
+.footnotes-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.footnotes-search-input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-search-input::placeholder {
+	color: var(--text-muted);
+}
+
+.footnotes-clear-search {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 20px;
+	height: 20px;
+	border: none;
+	background: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: 2px;
+	font-size: 14px;
+	font-weight: bold;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.1s ease;
+}
+
+.footnotes-clear-search:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Search highlighting styles */
+.search-highlight {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-on-accent);
+	padding: 1px 2px;
+	border-radius: 2px;
+	font-weight: 500;
+}
+
+/* Renumber Modal Styles */
+.renumber-description {
+	margin-bottom: 16px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--interactive-accent);
+	color: var(--text-normal);
+	line-height: 1.4;
+}
+
+.renumber-warning {
+	margin-bottom: 20px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	border-left: 4px solid var(--color-orange);
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--text-normal);
+}
+
+.renumber-buttons {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.renumber-buttons button {
+	padding: 8px 16px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: all 0.1s ease;
+	font-size: 14px;
+}
+
+.renumber-buttons button.mod-cta {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.renumber-buttons button.mod-cta:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+.renumber-buttons button:not(.mod-cta) {
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.renumber-buttons button:not(.mod-cta):hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Settings Instructions Styles */
+.footnotes-instructions {
+	margin-top: 24px;
+	padding: 16px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--color-green);
+}
+
+.footnotes-instructions h3 {
+	margin: 0 0 12px 0;
+	color: var(--text-normal);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.footnotes-instructions ol {
+	margin: 0;
+	padding-left: 20px;
+	color: var(--text-normal);
+}
+
+.footnotes-instructions li {
+	margin-bottom: 8px;
+	line-height: 1.4;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 300px) {
+	.footnotes-title-row {
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+	
+	.footnotes-title {
+		text-align: center;
+	}
+	
+	.footnotes-controls {
+		justify-content: center;
+	}
+	
+	.renumber-buttons {
+		flex-direction: column;
+	}
+	
+	.renumber-buttons button {
+		width: 100%;
+	}
+}
+
+/* Hover effects for better UX */
+.footnotes-control-btn:hover {
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.footnotes-toggle-btn:hover {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus styles for accessibility */
+.footnotes-control-btn:focus,
+.footnotes-toggle-btn:focus,
+.footnotes-search-input:focus {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+/* Animation for active buttons */
+@keyframes buttonPress {
+	0% { transform: scale(1); }
+	50% { transform: scale(0.95); }
+	100% { transform: scale(1); }
+}
+
+.footnotes-control-btn:active,
+.footnotes-toggle-btn:active {
+	animation: buttonPress 0.1s ease-in-out;
+}
+
+/* Special styling for empty states */
+.footnote-text:empty::before {
+	content: '(empty footnote)';
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Enhanced visual feedback */
+.footnote-item:hover .footnote-number {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.footnote-item:hover .footnote-ref-count {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
