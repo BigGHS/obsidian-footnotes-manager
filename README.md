@@ -4,106 +4,256 @@ The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to st
 
 ## Features
 
-- **Dedicated Footnotes Panel**: View all footnotes in a clean, organized sidebar panel, grouped by document headers.
-- **Inline Editing**: Edit footnote content directly in the panel with support for single-line and multi-line footnotes.
-- **Navigation Tools**:
-  - Jump to footnote definitions or references in the editor.
-  - Navigate to the footnotes section or return to your last edit position.
-  - Click headers in the panel to jump to their location in the document.
-- **Search Functionality**: Quickly find footnotes by searching their content or numbers, with highlighted matches.
-- **Hierarchical Organization**: Footnotes are automatically grouped under document headers, with collapsible sections for better organization.
-- **Footnote Renumbering**: Remove gaps in footnote numbering with a single click, ensuring sequential numbering.
-- **Safe Deletion**: Delete footnotes with confirmation prompts, handling single or multiple references appropriately.
-- **Customizable Settings**:
-  - Toggle panel opening on startup.
-  - Set default collapsed/expanded view for sections.
-  - Enable debug mode for troubleshooting.
-- **Responsive Design**: Optimized for various screen sizes with accessible, modern styling.
+### 📚 **Two View Modes**
+- **Outline View**: Footnotes organized hierarchically by document headers with collapsible sections
+- **List View**: Simple sequential display of all footnotes in document order
+- **Easy Toggle**: Switch between views instantly with the view toggle button
+
+### ✏️ **Inline Editing**
+- Edit footnote content directly in the panel with support for single-line and multi-line footnotes
+- Real-time editing with auto-save functionality
+- Click any footnote to start editing immediately
+
+### 🧭 **Advanced Navigation**
+- **Jump to footnotes section** or return to your last edit position with dedicated buttons
+- **Click headers** in the panel to jump to their location in the document
+- **Reference buttons** for each footnote to navigate to specific references in the text
+- **Click footnotes** to jump directly to their definitions
+
+### 🔍 **Search Functionality**
+- Search footnotes by content or number with real-time filtering
+- Highlighted search matches in results
+- Clear search with one click
+
+### 📋 **Smart Organization**
+- **Hierarchical grouping** by document headers with collapsible sections
+- **Reference counting** showing how many times each footnote is used
+- **Document order** preserved in list view mode
+
+### 🔧 **Footnote Management**
+- **Insert new footnotes** with automatic numbering
+- **Renumber footnotes** to remove gaps with confirmation dialog
+- **Safe deletion** with smart handling of single vs multiple references
+- **Bulk operations** for managing large documents
+
+### 🎨 **Modern Interface**
+- **Sticky header** that stays visible while scrolling (like Obsidian's outline view)
+- **Modern icons** using Obsidian's native icon system
+- **Responsive design** optimized for various screen sizes
+- **Accessible styling** with proper contrast and semantic markup
 
 ## Installation
 
-1. **Manual Installation Only**:
-   - Download the latest release from the GitHub repository.
-   - Extract the files (`main.js`, `manifest.json`, `styles.css`) to your vault's plugins directory: `<vault>/.obsidian/plugins/obsidian-footnotes-manager/`.
-   - Enable the plugin in `Settings > Community Plugins`.
+### Manual Installation (Recommended)
+1. Download the latest release files (`main.js`, `manifest.json`, `styles.css`)
+2. Create folder: `<vault>/.obsidian/plugins/obsidian-footnotes-manager/`
+3. Copy the files to this folder
+4. Enable the plugin in `Settings > Community Plugins`
+
+### Development Installation
+1. Clone this repository to your vault's plugins directory
+2. Run `npm install` to install dependencies
+3. Run `npm run build` to build the plugin
+4. Enable the plugin in Obsidian settings
 
 ## Usage
 
 ### Opening the Panel
-- Click the hash (`⌗`) icon in the ribbon (left sidebar).
-- Use the command palette (`Ctrl/Cmd + P`) and select "Toggle Footnotes Panel".
-- Enable "Open panel on startup" in settings for automatic opening.
+- **Ribbon Icon**: Click the hash (`⌗`) icon in the left sidebar
+- **Command Palette**: Use `Ctrl/Cmd + P` and select "Toggle Footnotes Panel"
+- **Auto-open**: Enable "Open panel on startup" in settings
 
-### Viewing Footnotes
-- Footnotes are displayed in the panel, grouped by document headers.
-- Expand/collapse sections using the toggle button or individual collapse icons.
-- Click a footnote to jump to its definition or edit its content inline.
-- Use reference buttons to navigate to specific footnote references in the text.
+### View Modes
+- **Outline View** (default): Footnotes grouped by document headers with expand/collapse functionality
+- **List View**: Simple numbered list showing footnotes in document order
+- **Toggle**: Use the list/heading icon button to switch between modes
 
-### Editing Footnotes
-- Click footnote content to enter edit mode.
-- Save changes with the "Save" button or `Enter` (single-line) / `Ctrl+Enter` (multi-line).
-- Cancel edits with the "Cancel" button or `Esc`.
-- Delete footnotes using the trash icon, with confirmation prompts.
+### Working with Footnotes
+- **View**: All footnotes are displayed with reference counts and content preview
+- **Edit**: Click any footnote content to edit inline
+- **Navigate**: Use reference buttons to jump to specific footnote references
+- **Insert**: Use command palette "Insert footnote" or assign a hotkey
+- **Delete**: Click the trash icon with confirmation prompts
 
-### Inserting Footnotes
-- Use the command palette and select "Insert footnote" or bind a hotkey.
-- A new footnote reference (`[^n]`) is inserted at the cursor, and a definition (`[^n]: `) is added to the footnotes section.
+### Navigation Tools
+- **📍 Jump to footnotes**: Navigate to the footnotes section in your document
+- **↩️ Return**: Go back to your last editing position
+- **🔢 Renumber**: Clean up gaps in footnote numbering
+- **👁️ View toggle**: Switch between outline and list views
+- **🔍 Search**: Filter footnotes by content or number
 
-### Navigation
-- Use the chevron-right button to jump to the footnotes section.
-- Use the chevron-left button to return to your last edit position.
-- Click header names to navigate to their location in the document.
+### Search Features
+- **Real-time filtering**: Type to instantly filter footnotes
+- **Highlight matches**: Search terms are highlighted in results
+- **Clear search**: Click the × button to reset
+- **Search scope**: Searches both footnote content and numbers
 
-### Searching
-- Type in the search bar to filter footnotes by content or number.
-- Clear the search using the "×" button.
-- Matching text is highlighted in the results.
-
-### Renumbering
-- Click the renumber button (three horizontal lines) to remove gaps in footnote numbering.
-- Confirm the action in the modal, which lists detected gaps.
-- All references and definitions are updated to sequential numbers.
+### Organization Features
+- **Hierarchical grouping**: Footnotes automatically grouped under document headers
+- **Collapsible sections**: Expand/collapse groups with ▶/▼ icons
+- **Bulk collapse/expand**: Use +/- button to toggle all sections
+- **Reference tracking**: See how many references each footnote has
 
 ## Settings
 
-Access settings in `Settings > Community Plugins > Footnotes Manager > Plugin Settings`:
+Access settings in `Settings > Community Plugins > Footnotes Manager`:
 
-- **Open panel on startup**: Automatically show the panel when Obsidian starts.
-- **Default collapsed view**: Start with sections collapsed to show only headers.
-- **Debug mode**: Enable console logging for troubleshooting.
+- **Open panel on startup**: Automatically show the panel when Obsidian starts
+- **Default collapsed view**: Start with sections collapsed in outline view
+- **Debug mode**: Enable console logging for troubleshooting
+
+## Keyboard Shortcuts
+
+### Editing Footnotes
+- **Enter**: Save single-line footnote edits
+- **Ctrl/Cmd + Enter**: Save multi-line footnote edits
+- **Escape**: Cancel editing and revert changes
+
+### Recommended Hotkeys (assign in Obsidian settings)
+- **Insert footnote**: e.g., `Ctrl + Shift + F`
+- **Toggle footnotes panel**: e.g., `Ctrl + Shift + N`
+- **Jump to footnotes**: e.g., `Ctrl + Shift + J`
+
+## Tips and Best Practices
+
+### Organization
+- Use clear, descriptive headers to organize your footnotes effectively
+- Group related footnotes under appropriate sections
+- Use the search function to quickly find specific footnotes in large documents
+
+### Editing
+- Click directly on footnote content to edit
+- Use multi-line editing for longer footnotes
+- The plugin automatically handles footnote formatting
+
+### Navigation
+- Use reference buttons to check all uses of a footnote
+- Click headers to quickly navigate to document sections
+- Use the return button after jumping to footnotes section
+
+### Management
+- Regularly use the renumber function to clean up footnote numbering
+- Check reference counts to identify unused or heavily-referenced footnotes
+- Use search to audit footnote content
+
+## File Structure
+
+```
+obsidian-footnotes-manager/
+├── main.ts          # Core plugin logic and FootnotesView class
+├── styles.css       # Complete styling including sticky header
+├── manifest.json    # Plugin metadata
+├── README.md        # Documentation
+└── LICENSE          # MIT License
+```
 
 ## Development
 
 ### Building the Plugin
-1. Clone the repository: `git clone <repository-url>`.
-2. Install dependencies: `npm install`.
-3. Build the plugin: `npm run build`.
-4. Copy the output files (`main.js`, `styles.css`, `manifest.json`) to your Obsidian plugins directory.
+```bash
+npm install
+npm run build
+```
+
+### Development Mode
+```bash
+npm run dev
+```
 
 ### Contributing
-- Submit issues or feature requests on the GitHub repository.
-- Fork the repository, create a branch, and submit a pull request with your changes.
-- Ensure code follows TypeScript conventions and includes appropriate documentation.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with appropriate tests
+4. Submit a pull request with clear description
 
-### File Structure
-- `main.ts`: Core plugin logic, including the FootnotesView and plugin functionality.
-- `styles.css`: Styling for the panel, buttons, and modal.
-- `manifest.json`: Plugin metadata (not included here).
+### Code Structure
+- **FootnotesView**: Main UI component handling the sidebar panel
+- **FootnotesManagerPlugin**: Core plugin class with footnote processing logic
+- **Modal components**: Confirmation dialogs and user interactions
+- **CSS styling**: Modern, accessible design matching Obsidian's aesthetic
 
-## Known Issues
-- Rapid editor changes may occasionally cause the panel to refresh unnecessarily. Debouncing is implemented to mitigate this.
-- Complex markdown documents with unusual footnote formats may require additional parsing logic.
+## Known Issues & Limitations
+
+- Complex markdown documents with unusual footnote formats may require manual adjustment
+- Performance may be affected with documents containing hundreds of footnotes
+- Plugin works best with standard markdown footnote syntax: `[^number]` and `[^number]: content`
 
 ## Roadmap
-- Add support for custom footnote formats.
-- Add export functionality for footnote lists.
+
+- **Export functionality**: Export footnote lists in various formats
+- **Custom footnote formats**: Support for non-numeric footnote identifiers
+- **Footnote templates**: Quick insertion of formatted footnotes
+- **Cross-document footnotes**: Link footnotes across multiple files
+- **Advanced search**: RegEx support and content filtering
+
+## Troubleshooting
+
+### Panel Not Showing
+- Check that the plugin is enabled in Community Plugins
+- Try toggling the panel with the ribbon icon or command palette
+- Restart Obsidian if the panel doesn't appear
+
+### Footnotes Not Detected
+- Ensure footnotes follow standard markdown syntax: `[^1]` and `[^1]: content`
+- Check that footnote definitions are properly formatted
+- Try refreshing the panel by switching files
+
+### Performance Issues
+- Enable debug mode to identify bottlenecks
+- Consider splitting very large documents with many footnotes
+- Check console for error messages
+
+## Support
+
+For issues, feature requests, or questions:
+- Open an issue on the GitHub repository
+- Check existing issues for similar problems
+- Provide clear reproduction steps and system information
 
 ## License
-This plugin is licensed under the MIT License. See the GitHub repository for details.
+
+This plugin is licensed under the MIT License. See the LICENSE file for details.
+
+## Release Notes
+
+### Version 1.1.0 (Current) - Enhanced UI & List View
+**🆕 New Features:**
+- **List View Mode**: Toggle between hierarchical outline view and simple sequential list view
+- **Sticky Header**: Header controls now stay visible while scrolling (like Obsidian's outline view)
+- **Modern Icons**: All buttons now use Obsidian's native `setIcon` system for consistency
+- **Enhanced Navigation**: Improved button styling and tooltips
+
+**🔧 Improvements:**
+- **Better Performance**: Optimized refresh logic and duplicate prevention
+- **Code Quality**: Eliminated duplicate methods and improved TypeScript structure
+- **UI Polish**: Enhanced button spacing, hover effects, and visual feedback
+- **Accessibility**: Better contrast and semantic markup throughout
+
+**🐛 Bug Fixes:**
+- Fixed compilation errors with duplicate method implementations
+- Resolved missing navigation button handlers
+- Improved editor detection and file handling
+- Enhanced skip refresh logic to prevent UI conflicts
+
+### Version 1.0.0 - Initial Release
+**🎉 Core Features:**
+- Hierarchical footnote organization by document headers
+- Inline footnote editing with auto-save
+- Search functionality with highlighted matches
+- Safe footnote deletion with reference counting
+- Footnote renumbering to remove gaps
+- Navigation tools (jump to footnotes, return to edit position)
+- Collapsible sections with expand/collapse all
+- Reference tracking and navigation
+- Modern responsive design
+- Comprehensive settings panel
 
 ## Acknowledgements
-- Built with the Obsidian API and TypeScript.
-- Inspired by the needs of academic and technical writers for efficient footnote management.
 
-For support, please open an issue on the [GitHub repository](<insert-repository-url-here>). Enjoy managing your footnotes with ease!
+- Built with the Obsidian API and TypeScript
+- Inspired by academic and technical writing workflows
+- Designed for efficient footnote management in long-form content
+
+---
+
+**Enjoy efficient footnote management with the Footnotes Manager plugin!** 📝
