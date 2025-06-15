@@ -24,3 +24,6 @@ data.json
 # Exclude text files
 *.txt
 *.txt
+
+# Other code files
+main copy.ts
