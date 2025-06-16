@@ -12,7 +12,8 @@ import {
 	EditorPosition,
 	Notice,
 	Modal,
-	setIcon
+	setIcon,
+	MarkdownRenderer
 } from 'obsidian';
 
 // Plugin settings interface
@@ -874,312 +875,325 @@ class FootnotesView extends ItemView {
 	}
 
 	private createFootnoteElement(footnote: FootnoteData, container: Element) {
-		const footnoteEl = container.createEl('div', {
-			cls: 'footnote-item'
-		});
+	    const footnoteEl = container.createEl('div', { cls: 'footnote-item' });
+    
+	    // Footnote number and reference count
+	    const headerEl = footnoteEl.createEl('div', { cls: 'footnote-header-info' });
+	    const numberEl = headerEl.createEl('span', { 
+	        cls: 'footnote-number',
+	        text: `[${footnote.number}]`
+	    });
+    
+	    const countEl = headerEl.createEl('span', { 
+	        cls: 'footnote-ref-count',
+	        text: `${footnote.referenceCount} ref${footnote.referenceCount !== 1 ? 's' : ''}`
+	    });
 
-		// Footnote number and reference count
-		const headerEl = footnoteEl.createEl('div', {
-			cls: 'footnote-header-info'
-		});
-		const numberEl = headerEl.createEl('span', {
-			cls: 'footnote-number',
-			text: `[${footnote.number}]`
-		});
+	    const contentEl = footnoteEl.createEl('div', { cls: 'footnote-content' });
+    
+	    const isMultiLine = footnote.content.includes('\n');
+    
+	    let textEl: HTMLElement;
+	    let displayEl: HTMLElement; // NEW: Element for displaying rendered markdown
+    
+	    if (isMultiLine) {
+	        // For multi-line footnotes, create both display and edit elements
+	        displayEl = contentEl.createEl('div', { 
+	            cls: 'footnote-text footnote-display'
+	        });
+        
+	        textEl = contentEl.createEl('textarea', { 
+	            cls: 'footnote-text footnote-textarea footnote-edit',
+	            attr: { 
+	                spellcheck: 'false',
+	                rows: (footnote.content.split('\n').length + 1).toString()
+	            }
+	        }) as HTMLTextAreaElement;
+	        (textEl as HTMLTextAreaElement).value = footnote.content || '';
+        
+	        // Hide edit element initially
+	        textEl.style.display = 'none';
+	    } else {
+	        // For single-line footnotes
+	        displayEl = contentEl.createEl('div', { 
+	            cls: 'footnote-text footnote-display'
+	        });
+        
+	        textEl = contentEl.createEl('div', { 
+	            cls: 'footnote-text footnote-edit',
+	            attr: { contenteditable: 'true', spellcheck: 'false' }
+	        });
+	        textEl.textContent = footnote.content || '(empty footnote)';
+        
+	        // Hide edit element initially
+	        textEl.style.display = 'none';
+	    }
+    
+	    // NEW: Render markdown content in display element
+	    this.renderFootnoteMarkdown(footnote.content || '(empty footnote)', displayEl);
+    
+	    // Handle search highlighting
+	    const currentSearchTerm = (this as any).currentSearchTerm || '';
+	    if (currentSearchTerm && footnote.content.toLowerCase().includes(currentSearchTerm)) {
+	        this.highlightSearchInElement(displayEl, currentSearchTerm);
+	    }
 
-		const countEl = headerEl.createEl('span', {
-			cls: 'footnote-ref-count',
-			text: `${footnote.referenceCount} ref${footnote.referenceCount !== 1 ? 's' : ''}`
-		});
+	    // References section (unchanged)
+	    if (footnote.references.length > 0) {
+	        const referencesEl = contentEl.createEl('div', { cls: 'footnote-references' });
+	        referencesEl.createEl('span', { 
+	            cls: 'footnote-references-label',
+	            text: 'References:'
+	        });
 
-		const contentEl = footnoteEl.createEl('div', {
-			cls: 'footnote-content'
-		});
+	        footnote.references.forEach((ref, index) => {
+	            const refEl = referencesEl.createEl('button', { 
+	                cls: 'footnote-reference-btn',
+	                text: `Line ${ref.line + 1}`,
+	                attr: { title: `Go to reference ${index + 1} on line ${ref.line + 1}` }
+	            });
+            
+	            refEl.addEventListener('click', (e) => {
+	                e.stopPropagation();
+                
+	                const navId = `reference-${footnote.number}-${index}`;
+	                this.pendingNavigation = navId;
+	                this.plugin.setSkipRefreshPeriod(2000);
+                
+	                this.plugin.highlightFootnoteInEditor(footnote, index);
+                
+	                setTimeout(() => {
+	                    if (this.pendingNavigation === navId) {
+	                        this.debug('Executing delayed navigation for reference:', footnote.number, index);
+	                        this.plugin.highlightFootnoteInEditor(footnote, index);
+	                        this.pendingNavigation = null;
+	                    }
+	                }, 50);
+                
+	                setTimeout(() => {
+	                    if (this.pendingNavigation === navId) {
+	                        this.pendingNavigation = null;
+	                    }
+	                }, 1000);
+	            });
+	        });
+	    }
 
-		const isMultiLine = footnote.content.includes('\n');
+	    // Action buttons container
+	    const actionsEl = footnoteEl.createEl('div', { cls: 'footnote-actions' });
+    
+	    // Save button (initially hidden)
+	    const saveBtn = actionsEl.createEl('button', { 
+	        text: 'Save', 
+	        cls: 'footnote-btn footnote-save-btn' 
+	    });
+	    saveBtn.style.display = 'none';
+    
+	    // Cancel button (initially hidden)
+	    const cancelBtn = actionsEl.createEl('button', { 
+	        text: 'Cancel', 
+	        cls: 'footnote-btn footnote-cancel-btn' 
+	    });
+	    cancelBtn.style.display = 'none';
 
-		let textEl: HTMLElement;
-		if (isMultiLine) {
-			textEl = contentEl.createEl('textarea', {
-				cls: 'footnote-text footnote-textarea',
-				attr: {
-					spellcheck: 'false',
-					rows: (footnote.content.split('\n').length + 1).toString()
-				}
-			}) as HTMLTextAreaElement;
-			(textEl as HTMLTextAreaElement).value = footnote.content || '';
-		} else {
-			textEl = contentEl.createEl('div', {
-				cls: 'footnote-text',
-				attr: {
-					contenteditable: 'true',
-					spellcheck: 'false'
-				}
-			});
-			textEl.textContent = footnote.content || '(empty footnote)';
-		}
+	    // Delete button
+	    const deleteBtn = actionsEl.createEl('button', { 
+	        cls: 'footnote-btn footnote-delete-btn',
+	        attr: { title: 'Delete footnote' }
+	    });
+	    deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/></svg>`;
 
-		const currentSearchTerm = (this as any).currentSearchTerm || '';
-		if (currentSearchTerm && footnote.content.toLowerCase().includes(currentSearchTerm) && !isMultiLine) {
-			if (textEl.tagName === 'DIV') {
-				textEl.innerHTML = this.highlightSearchText(footnote.content || '(empty footnote)', currentSearchTerm);
-			}
-		}
+	    let originalText = footnote.content;
+	    let isEditing = false;
 
-		// References section
-		if (footnote.references.length > 0) {
-			const referencesEl = contentEl.createEl('div', {
-				cls: 'footnote-references'
-			});
-			referencesEl.createEl('span', {
-				cls: 'footnote-references-label',
-				text: 'References:'
-			});
+	    const handleInput = () => {
+	        if (!isEditing) {
+	            isEditing = true;
+	            saveBtn.style.display = 'inline-block';
+	            cancelBtn.style.display = 'inline-block';
+	            deleteBtn.style.display = 'none';
+	            footnoteEl.addClass('footnote-editing');
+	        }
+	    };
 
-			footnote.references.forEach((ref, index) => {
-				const refEl = referencesEl.createEl('button', {
-					cls: 'footnote-reference-btn',
-					text: `Line ${ref.line + 1}`,
-					attr: {
-						title: `Go to reference ${index + 1} on line ${ref.line + 1}`
-					}
-				});
+	    if (textEl.tagName === 'TEXTAREA') {
+	        (textEl as HTMLTextAreaElement).addEventListener('input', handleInput);
+        
+	        const autoResize = () => {
+	            const textarea = textEl as HTMLTextAreaElement;
+	            textarea.style.height = 'auto';
+	            textarea.style.height = textarea.scrollHeight + 'px';
+	        };
+        
+	        (textEl as HTMLTextAreaElement).addEventListener('input', autoResize);
+	        setTimeout(autoResize, 0);
+	    } else {
+	        textEl.addEventListener('input', handleInput);
+	    }
 
-				refEl.addEventListener('click', (e) => {
-					e.stopPropagation();
+	    const handleKeydown = (e: KeyboardEvent) => {
+	        if (e.key === 'Enter' && !e.shiftKey && textEl.tagName !== 'TEXTAREA') {
+	            e.preventDefault();
+	            saveFootnote();
+	        } else if (e.key === 'Enter' && e.ctrlKey && textEl.tagName === 'TEXTAREA') {
+	            e.preventDefault();
+	            saveFootnote();
+	        } else if (e.key === 'Escape') {
+	            e.preventDefault();
+	            cancelEdit();
+	        }
+	    };
 
-					// ENHANCED: Set pending navigation and execute immediately + delayed
-					const navId = `reference-${footnote.number}-${index}`;
-					this.pendingNavigation = navId;
-					this.plugin.setSkipRefreshPeriod(2000);
+	    textEl.addEventListener('keydown', handleKeydown);
 
-					// Execute navigation immediately
-					this.plugin.highlightFootnoteInEditor(footnote, index);
+	    const saveFootnote = () => {
+	        let newText: string;
+	        if (textEl.tagName === 'TEXTAREA') {
+	            newText = (textEl as HTMLTextAreaElement).value.trim();
+	        } else {
+	            newText = textEl.textContent?.trim() || '';
+	        }
+        
+	        if (newText !== originalText) {
+	            this.updateFootnoteInEditor(footnote, newText);
+	            originalText = newText;
+            
+	            // NEW: Update the display element with new markdown
+	            this.renderFootnoteMarkdown(newText, displayEl);
+	        }
+	        exitEditMode();
+	    };
 
-					// ENHANCED: Also set up delayed execution in case the immediate one gets interrupted
-					setTimeout(() => {
-						if (this.pendingNavigation === navId) {
-							this.debug('Executing delayed navigation for reference:', footnote.number, index);
-							this.plugin.highlightFootnoteInEditor(footnote, index);
-							this.pendingNavigation = null;
-						}
-					}, 50);
+	    const cancelEdit = () => {
+	        if (textEl.tagName === 'TEXTAREA') {
+	            (textEl as HTMLTextAreaElement).value = originalText;
+	        } else {
+	            textEl.textContent = originalText;
+	        }
+	        exitEditMode();
+	    };
 
-					// Clear pending navigation after delay
-					setTimeout(() => {
-						if (this.pendingNavigation === navId) {
-							this.pendingNavigation = null;
-						}
-					}, 1000);
-				});
-			});
-		}
-		// Action buttons container
-		const actionsEl = footnoteEl.createEl('div', {
-			cls: 'footnote-actions'
-		});
+	    const exitEditMode = () => {
+	        isEditing = false;
+	        saveBtn.style.display = 'none';
+	        cancelBtn.style.display = 'none';
+	        deleteBtn.style.display = 'inline-block';
+	        footnoteEl.removeClass('footnote-editing');
+        
+	        // NEW: Show display element, hide edit element
+	        displayEl.style.display = 'block';
+	        textEl.style.display = 'none';
+	        textEl.blur();
+	    };
 
-		// Save button (initially hidden)
-		const saveBtn = actionsEl.createEl('button', {
-			text: 'Save',
-			cls: 'footnote-btn footnote-save-btn'
-		});
-		saveBtn.style.display = 'none';
+	    const enterEditMode = () => {
+	        isEditing = true;
+	        saveBtn.style.display = 'inline-block';
+	        cancelBtn.style.display = 'inline-block';
+	        deleteBtn.style.display = 'none';
+	        footnoteEl.addClass('footnote-editing');
+        
+	        // NEW: Hide display element, show edit element
+	        displayEl.style.display = 'none';
+	        textEl.style.display = 'block';
+	        textEl.focus();
+        
+	        if (textEl.tagName === 'TEXTAREA') {
+	            (textEl as HTMLTextAreaElement).select();
+	        } else {
+	            const range = document.createRange();
+	            range.selectNodeContents(textEl);
+	            const selection = window.getSelection();
+	            if (selection) {
+	                selection.removeAllRanges();
+	                selection.addRange(range);
+	            }
+	        }
+	    };
 
-		// Cancel button (initially hidden)
-		const cancelBtn = actionsEl.createEl('button', {
-			text: 'Cancel',
-			cls: 'footnote-btn footnote-cancel-btn'
-		});
-		cancelBtn.style.display = 'none';
+	    saveBtn.addEventListener('click', (e) => {
+	        e.stopPropagation();
+	        saveFootnote();
+	    });
 
-		// Delete button
-		const deleteBtn = actionsEl.createEl('button', {
-			cls: 'footnote-btn footnote-delete-btn',
-			attr: {
-				title: 'Delete footnote'
-			}
-		});
-		// UPDATED: Use setIcon instead of innerHTML
-		setIcon(deleteBtn, 'trash-2');
+	    cancelBtn.addEventListener('click', (e) => {
+	        e.stopPropagation();
+	        cancelEdit();
+	    });
 
-		let originalText = footnote.content;
-		let isEditing = false;
+	    deleteBtn.addEventListener('click', (e) => {
+	        e.stopPropagation();
+        
+	        let confirmMessage = `Are you sure you want to delete footnote [${footnote.number}]?`;
+	        if (footnote.referenceCount === 1) {
+	            confirmMessage += '\n\nThis will delete both the reference and the footnote definition.';
+	        } else {
+	            confirmMessage += `\n\nThis footnote has ${footnote.referenceCount} references. Only the first reference will be deleted. The footnote definition will be preserved.`;
+	        }
+        
+	        const confirmDelete = confirm(confirmMessage);
+	        if (confirmDelete) {
+	            this.deleteFootnoteFromEditor(footnote);
+	        }
+	    });
 
-		const handleInput = () => {
-			if (!isEditing) {
-				isEditing = true;
-				saveBtn.style.display = 'inline-block';
-				cancelBtn.style.display = 'inline-block';
-				deleteBtn.style.display = 'none';
-				footnoteEl.addClass('footnote-editing');
-			}
-		};
+	    // Click to edit functionality - MODIFIED
+	    footnoteEl.addEventListener('click', (e) => {
+	        this.debug('Footnote clicked, isEditing:', isEditing, 'target:', e.target);
+        
+	        if (isEditing) return;
+        
+	        const target = e.target as HTMLElement;
+	        if (target.tagName === 'BUTTON' || target.closest('button')) {
+	            this.debug('Click was on button, ignoring');
+	            return;
+	        }
+        
+	        // NEW: Check if click was on display element or its children
+	        if (target === displayEl || displayEl.contains(target)) {
+	            this.debug('Clicked on display element, entering edit mode');
+	            e.preventDefault();
+	            e.stopPropagation();
+	            enterEditMode();
+	            return;
+	        }
+        
+	        if (target === textEl) {
+	            this.debug('Clicked on text element, entering edit mode');
+	            e.preventDefault();
+	            e.stopPropagation();
+	            enterEditMode();
+	            return;
+	        }
+        
+	        // Default click behavior - jump to footnote definition
+	        this.debug('Calling jumpToFootnoteDefinition');
+	        e.preventDefault();
+	        e.stopPropagation();
 
-		if (textEl.tagName === 'TEXTAREA') {
-			(textEl as HTMLTextAreaElement).addEventListener('input', handleInput);
+	        this.pendingNavigation = `footnote-${footnote.number}`;
+	        this.plugin.setSkipRefreshPeriod(2000);
+        
+	        this.jumpToFootnoteDefinition(footnote);
+        
+	        setTimeout(() => {
+	            if (this.pendingNavigation === `footnote-${footnote.number}`) {
+	                this.debug('Executing delayed navigation for footnote:', footnote.number);
+	                this.jumpToFootnoteDefinition(footnote);
+	                this.pendingNavigation = null;
+	            }
+	        }, 50);
+        
+	        setTimeout(() => {
+	            if (this.pendingNavigation === `footnote-${footnote.number}`) {
+	                this.pendingNavigation = null;
+	            }
+	        }, 1000);
+	    });
 
-			const autoResize = () => {
-				const textarea = textEl as HTMLTextAreaElement;
-				textarea.style.height = 'auto';
-				textarea.style.height = textarea.scrollHeight + 'px';
-			};
-
-			(textEl as HTMLTextAreaElement).addEventListener('input', autoResize);
-			setTimeout(autoResize, 0);
-		} else {
-			textEl.addEventListener('input', handleInput);
-		}
-
-		const handleKeydown = (e: KeyboardEvent) => {
-			if (e.key === 'Enter' && !e.shiftKey && textEl.tagName !== 'TEXTAREA') {
-				e.preventDefault();
-				saveFootnote();
-			} else if (e.key === 'Enter' && e.ctrlKey && textEl.tagName === 'TEXTAREA') {
-				e.preventDefault();
-				saveFootnote();
-			} else if (e.key === 'Escape') {
-				e.preventDefault();
-				cancelEdit();
-			}
-		};
-
-		textEl.addEventListener('keydown', handleKeydown);
-
-		const saveFootnote = () => {
-			let newText: string;
-			if (textEl.tagName === 'TEXTAREA') {
-				newText = (textEl as HTMLTextAreaElement).value.trim();
-			} else {
-				newText = textEl.textContent?.trim() || '';
-			}
-
-			if (newText !== originalText) {
-				this.updateFootnoteInEditor(footnote, newText);
-				originalText = newText;
-			}
-			exitEditMode();
-		};
-
-		const cancelEdit = () => {
-			if (textEl.tagName === 'TEXTAREA') {
-				(textEl as HTMLTextAreaElement).value = originalText;
-			} else {
-				if (currentSearchTerm && originalText.toLowerCase().includes(currentSearchTerm)) {
-					textEl.innerHTML = this.highlightSearchText(originalText, currentSearchTerm);
-				} else {
-					textEl.textContent = originalText;
-				}
-			}
-			exitEditMode();
-		};
-
-		const exitEditMode = () => {
-			isEditing = false;
-			saveBtn.style.display = 'none';
-			cancelBtn.style.display = 'none';
-			deleteBtn.style.display = 'inline-block';
-			footnoteEl.removeClass('footnote-editing');
-			textEl.blur();
-		};
-
-		saveBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			saveFootnote();
-		});
-
-		cancelBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			cancelEdit();
-		});
-
-		deleteBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-
-			let confirmMessage = `Are you sure you want to delete footnote [${footnote.number}]?`;
-			if (footnote.referenceCount === 1) {
-				confirmMessage += '\n\nThis will delete both the reference and the footnote definition.';
-			} else {
-				confirmMessage += `\n\nThis footnote has ${footnote.referenceCount} references. Only the first reference will be deleted. The footnote definition will be preserved.`;
-			}
-
-			const confirmDelete = confirm(confirmMessage);
-			if (confirmDelete) {
-				this.deleteFootnoteFromEditor(footnote);
-			}
-		});
-		// Click to edit functionality
-		footnoteEl.addEventListener('click', (e) => {
-			this.debug('Footnote clicked, isEditing:', isEditing, 'target:', e.target);
-
-			if (isEditing) return;
-
-			const target = e.target as HTMLElement;
-			if (target.tagName === 'BUTTON' || target.closest('button')) {
-				this.debug('Click was on button, ignoring');
-				return;
-			}
-
-			if (target === textEl) {
-				this.debug('Clicked on text element, entering edit mode');
-				e.preventDefault();
-				e.stopPropagation();
-
-				isEditing = true;
-				saveBtn.style.display = 'inline-block';
-				cancelBtn.style.display = 'inline-block';
-				deleteBtn.style.display = 'none';
-				footnoteEl.addClass('footnote-editing');
-
-				textEl.focus();
-
-				if (textEl.tagName === 'TEXTAREA') {
-					(textEl as HTMLTextAreaElement).select();
-				} else {
-					const range = document.createRange();
-					range.selectNodeContents(textEl);
-					const selection = window.getSelection();
-					if (selection) {
-						selection.removeAllRanges();
-						selection.addRange(range);
-					}
-				}
-
-				return;
-			}
-
-			// Default click behavior - jump to footnote definition
-			this.debug('Calling jumpToFootnoteDefinition');
-			e.preventDefault();
-			e.stopPropagation();
-
-			// ENHANCED: Set pending navigation to ensure it happens even if refresh occurs
-			this.pendingNavigation = `footnote-${footnote.number}`;
-			this.plugin.setSkipRefreshPeriod(2000);
-
-			// Execute navigation immediately and also set up delayed execution
-			this.jumpToFootnoteDefinition(footnote);
-
-			// ENHANCED: Also set up delayed execution in case the immediate one gets interrupted
-			setTimeout(() => {
-				if (this.pendingNavigation === `footnote-${footnote.number}`) {
-					this.debug('Executing delayed navigation for footnote:', footnote.number);
-					this.jumpToFootnoteDefinition(footnote);
-					this.pendingNavigation = null;
-				}
-			}, 50);
-
-			// Clear pending navigation after a reasonable delay
-			setTimeout(() => {
-				if (this.pendingNavigation === `footnote-${footnote.number}`) {
-					this.pendingNavigation = null;
-				}
-			}, 1000);
-		});
-
-		footnoteEl.addEventListener('mouseleave', () => {
-			footnoteEl.removeClass('footnote-item-hover');
-		});
+	    footnoteEl.addEventListener('mouseleave', () => {
+	        footnoteEl.removeClass('footnote-item-hover');
+	    });
 	}
 
 	private jumpToFootnoteDefinition(footnote: FootnoteData) {
@@ -1432,6 +1446,70 @@ class FootnotesView extends ItemView {
 		setTimeout(() => {
 			this.refresh();
 		}, 100);
+	}
+	
+	// NEW: Add this method to the FootnotesView class
+	private async renderFootnoteMarkdown(content: string, element: HTMLElement) {
+	    element.empty();
+    
+	    if (!content || content.trim() === '') {
+	        element.createEl('span', { 
+	            text: '(empty footnote)', 
+	            cls: 'footnote-empty-placeholder' 
+	        });
+	        return;
+	    }
+    
+	    try {
+	        // Use Obsidian's MarkdownRenderer to render the content
+	        await MarkdownRenderer.renderMarkdown(
+	            content, 
+	            element, 
+	            '', // sourcePath - empty string for footnotes
+	            this // component
+	        );
+        
+	        // Remove any unwanted paragraph wrapping for single-line content
+	        if (!content.includes('\n')) {
+	            const paragraphs = element.querySelectorAll('p');
+	            if (paragraphs.length === 1) {
+	                const p = paragraphs[0];
+	                p.replaceWith(...Array.from(p.childNodes));
+	            }
+	        }
+	    } catch (error) {
+	        this.debug('Error rendering markdown:', error);
+	        // Fallback to plain text
+	        element.textContent = content;
+	    }
+	}
+
+	// NEW: Add this method to handle search highlighting in rendered content
+	private highlightSearchInElement(element: HTMLElement, searchTerm: string) {
+	    if (!searchTerm) return;
+    
+	    const walker = document.createTreeWalker(
+	        element,
+	        NodeFilter.SHOW_TEXT,
+	        null
+	    );
+    
+	    const textNodes: Text[] = [];
+	    let node;
+    
+	    while (node = walker.nextNode()) {
+	        textNodes.push(node as Text);
+	    }
+    
+	    textNodes.forEach(textNode => {
+	        const text = textNode.textContent || '';
+	        if (text.toLowerCase().includes(searchTerm.toLowerCase())) {
+	            const highlightedHTML = this.highlightSearchText(text, searchTerm);
+	            const span = document.createElement('span');
+	            span.innerHTML = highlightedHTML;
+	            textNode.replaceWith(span);
+	        }
+	    });
 	}
 }
 

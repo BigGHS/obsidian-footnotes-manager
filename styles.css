@@ -1234,3 +1234,134 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	background: linear-gradient(to right, transparent, var(--background-modifier-border), transparent);
 	opacity: 0.5;
 }
+
+/* Add these styles to your styles.css file */
+
+/* Display vs Edit states for footnote content */
+.footnote-display {
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.footnote-display:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.footnote-edit {
+    display: none; /* Hidden by default, shown during editing */
+}
+
+.footnote-editing .footnote-display {
+    display: none;
+}
+
+.footnote-editing .footnote-edit {
+    display: block;
+}
+
+/* Styling for rendered markdown in footnotes */
+.footnote-display em {
+    font-style: italic;
+}
+
+.footnote-display strong {
+    font-weight: bold;
+}
+
+.footnote-display code {
+    background-color: var(--code-background);
+    color: var(--code-normal);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+}
+
+.footnote-display a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.footnote-display a:hover {
+    text-decoration: underline;
+}
+
+.footnote-display blockquote {
+    border-left: 3px solid var(--quote-opening-modifier);
+    padding-left: 12px;
+    margin: 8px 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.footnote-display ul, .footnote-display ol {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.footnote-display li {
+    margin: 2px 0;
+}
+
+.footnote-display h1, .footnote-display h2, .footnote-display h3, 
+.footnote-display h4, .footnote-display h5, .footnote-display h6 {
+    margin: 8px 0 4px 0;
+    font-weight: bold;
+}
+
+.footnote-display h1 { font-size: 1.2em; }
+.footnote-display h2 { font-size: 1.15em; }
+.footnote-display h3 { font-size: 1.1em; }
+.footnote-display h4, .footnote-display h5, .footnote-display h6 { font-size: 1.05em; }
+
+/* Empty footnote placeholder styling */
+.footnote-empty-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Ensure search highlighting works in rendered content */
+.footnote-display .search-highlight {
+    background-color: var(--text-highlight-bg);
+    color: var(--text-on-accent);
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Adjust spacing for rendered content */
+.footnote-display > *:first-child {
+    margin-top: 0;
+}
+
+.footnote-display > *:last-child {
+    margin-bottom: 0;
+}
+
+/* Handle markdown in multi-line footnotes */
+.footnote-display pre {
+    background-color: var(--code-background);
+    border-radius: 4px;
+    padding: 8px;
+    overflow-x: auto;
+    margin: 4px 0;
+}
+
+.footnote-display pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Strikethrough support */
+.footnote-display del {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+/* Highlight support */
+.footnote-display mark {
+    background-color: var(--text-highlight-bg);
+    color: var(--text-normal);
+    padding: 1px 2px;
+    border-radius: 2px;
+}
