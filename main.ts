@@ -240,13 +240,13 @@ class FootnotesView extends ItemView {
 				cls: 'footnotes-control-btn nav-btn',
 				attr: { title: 'Jump to footnotes section' }
 			});
-			setIcon(navBtn, 'chevron-right');
+			setIcon(navBtn, 'footprints');
 		
 			const returnBtn = controlsContainer.createEl('button', { 
 				cls: 'footnotes-control-btn return-btn',
 				attr: { title: 'Return to last edit position' }
 			});
-			setIcon(returnBtn, 'chevron-left');
+			setIcon(returnBtn, 'file-text');
 		
 			const renumberBtn = controlsContainer.createEl('button', { 
 				cls: 'footnotes-control-btn renumber-btn',
@@ -258,7 +258,7 @@ class FootnotesView extends ItemView {
 				cls: 'footnotes-control-btn list-view-btn',
 				attr: { title: 'Toggle between outline and list view' }
 			});
-			setIcon(listViewBtn, this.isListView ? 'list' : 'heading');
+			setIcon(listViewBtn, this.isListView ? 'list' : 'list-tree');
 		
 			let toggleAllBtn: HTMLButtonElement | undefined;
 			if (!this.isListView) {

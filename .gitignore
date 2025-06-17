@@ -27,3 +27,7 @@ data.json
 
 # Other code files
 main copy.ts
+main_old.ts
+
+# Zip files
+Source.code.zip
