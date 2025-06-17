@@ -2364,40 +2364,95 @@ export default class FootnotesManagerPlugin extends Plugin {
 	}
 
 	renumberFootnotes() {
-		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (!activeView) {
-			new Notice('No active markdown file');
-			return;
+		this.debug('renumberFootnotes called');
+	
+		// Try to get editor from parameter
+		let activeEditor: Editor | null = null;
+		let targetFile: TFile | null = null;
+	
+		this.debug('Getting file from footnotes view');
+	
+		// Get the file that the footnotes panel is currently showing
+		const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		if (footnoteLeaves.length > 0) {
+			const footnoteView = footnoteLeaves[0].view as FootnotesView;
+			targetFile = (footnoteView as any).currentFile;
+			this.debug('Got target file from footnotes view:', !!targetFile);
 		}
-
-		const editor = activeView.editor;
-		const content = editor.getValue();
-		const footnotes = this.extractFootnotes(content);
-
-		if (footnotes.length === 0) {
-			new Notice('No footnotes found to renumber');
-			return;
-		}
-
-		// Sort footnotes by number to identify gaps
-		const sortedNumbers = footnotes.map(f => parseInt(f.number)).filter(n => !isNaN(n)).sort((a, b) => a - b);
-		const gaps: string[] = [];
-
-		for (let i = 1; i < sortedNumbers[sortedNumbers.length - 1]; i++) {
-			if (!sortedNumbers.includes(i)) {
-				gaps.push(i.toString());
+	
+		// If we have a target file, find its editor
+		if (targetFile) {
+			const leaves = this.app.workspace.getLeavesOfType('markdown');
+			for (const leaf of leaves) {
+				const view = leaf.view as MarkdownView;
+				if (view.file === targetFile) {
+					activeEditor = view.editor;
+					this.debug('Found editor for target file');
+					break;
+				}
 			}
 		}
+	
+		// Fallback to previous method if that didn't work
+		if (!activeEditor) {
+			this.debug('Fallback: searching for any active view');
+			let activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		
+			if (!activeView) {
+				const leaves = this.app.workspace.getLeavesOfType('markdown');
+				if (leaves.length > 0) {
+					activeView = leaves[0].view as MarkdownView;
+				}
+			}
+		
+			if (!activeView) {
+				new Notice('No markdown editor found. Please click in a markdown document first.');
+				return;
+			}
+		
+			activeEditor = activeView.editor;
+		}
 
-		if (gaps.length === 0) {
-			new Notice('No gaps found in footnote numbering');
+		// Double-check that we have a valid editor
+		if (!activeEditor || typeof activeEditor.getValue !== 'function') {
+			this.debug('Editor is invalid or missing getValue method');
+			new Notice('Unable to access editor');
 			return;
 		}
 
-		// Show confirmation modal
-		new RenumberConfirmationModal(this.app, this, gaps, () => {
-			this.performRenumbering(editor, footnotes);
-		}).open();
+		try {
+			const content = activeEditor.getValue();
+			const footnotes = this.extractFootnotes(content);
+		
+			if (footnotes.length === 0) {
+				new Notice('No footnotes found to renumber');
+				return;
+			}
+
+			// Sort footnotes by number to identify gaps
+			const sortedNumbers = footnotes.map(f => parseInt(f.number)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+			const gaps: string[] = [];
+		
+			for (let i = 1; i < sortedNumbers[sortedNumbers.length - 1]; i++) {
+				if (!sortedNumbers.includes(i)) {
+					gaps.push(i.toString());
+				}
+			}
+
+			if (gaps.length === 0) {
+				new Notice('No gaps found in footnote numbering');
+				return;
+			}
+
+			// Show confirmation modal
+			new RenumberConfirmationModal(this.app, this, gaps, () => {
+				this.performRenumbering(activeEditor!, footnotes);
+			}).open();
+		
+		} catch (error) {
+			this.debug('Error in renumberFootnotes:', error);
+			new Notice('Error accessing document: ' + error.message);
+		}
 	}
 
 	private performRenumbering(editor: Editor, footnotes: FootnoteData[]) {
