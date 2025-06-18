@@ -1,6 +1,6 @@
 # Footnotes Manager Plugin for Obsidian
 
-The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to streamline the management of footnotes in your markdown documents. It provides a dedicated sidebar panel for viewing, editing, and navigating footnotes, with advanced features like hierarchical grouping, search functionality, and footnote renumbering.
+The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to streamline the management of footnotes in your markdown documents. It provides a dedicated sidebar panel for viewing, editing, and navigating footnotes, with advanced features like hierarchical grouping, multi-section footnote support, unreferenced footnote detection, and enhanced renumbering capabilities.
 
 ## Features
 
@@ -9,10 +9,23 @@ The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to st
 - **List View**: Simple sequential display of all footnotes in document order
 - **Easy Toggle**: Switch between views instantly with the view toggle button
 
+### 🔗 **Multi-Section Footnote Support**
+- **Cross-section visibility**: Footnotes referenced in multiple sections appear in ALL relevant sections
+- **Visual indicator**: Copy icon next to footnote numbers indicates multi-section footnotes
+- **Section-specific references**: Each section shows only the references from that specific section
+- **Full functionality**: Edit, delete, and navigate from any section where the footnote appears
+
+### ⚠️ **Unreferenced Footnote Detection**
+- **Special section**: Unreferenced footnotes appear in a dedicated "Unreferenced" section in outline view
+- **Visual indicators**: Red text and borders clearly identify unreferenced footnotes
+- **Delete-only mode**: Unreferenced footnotes can only be deleted (no editing to prevent orphaned content)
+- **Clear labeling**: "Unreferenced" badge replaces reference count for these footnotes
+
 ### ✏️ **Inline Editing**
 - Edit footnote content directly in the panel with support for single-line and multi-line footnotes
 - Real-time editing with auto-save functionality
-- Click any footnote to start editing immediately
+- Click any footnote to start editing immediately (referenced footnotes only)
+- **Markdown rendering**: Footnote content displays with full markdown formatting
 
 ### 🧭 **Advanced Navigation**
 - **Jump to footnotes section** or return to your last edit position with dedicated buttons
@@ -29,11 +42,15 @@ The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to st
 - **Hierarchical grouping** by document headers with collapsible sections
 - **Reference counting** showing how many times each footnote is used
 - **Document order** preserved in list view mode
+- **Multi-section display** ensures footnotes appear wherever they're referenced
 
-### 🔧 **Footnote Management**
+### 🔧 **Enhanced Footnote Management**
 - **Insert new footnotes** with automatic numbering
-- **Renumber footnotes** to remove gaps with confirmation dialog
-- **Safe deletion** with smart handling of single vs multiple references
+- **Enhanced renumber dialog** with selective options:
+  - Remove orphaned references (references without matching footnotes)
+  - Fill gaps in footnote numbering
+  - Choose either, both, or cancel operation
+- **Safe deletion** with smart handling of single vs multiple references vs unreferenced footnotes
 - **Bulk operations** for managing large documents
 
 ### 🎨 **Modern Interface**
@@ -69,18 +86,36 @@ The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to st
 - **Toggle**: Use the list/heading icon button to switch between modes
 
 ### Working with Footnotes
+
+#### **Referenced Footnotes**
 - **View**: All footnotes are displayed with reference counts and content preview
-- **Edit**: Click any footnote content to edit inline
+- **Edit**: Click any footnote content to edit inline with markdown support
 - **Navigate**: Use reference buttons to jump to specific footnote references
+- **Multi-section**: Footnotes appear in all sections where they're used (marked with copy icon)
+
+#### **Unreferenced Footnotes**
+- **Special section**: Appear in "Unreferenced" section at bottom of outline view
+- **Visual indicators**: Red "Unreferenced" badge and subtle red styling
+- **Delete-only**: Can only be deleted (no editing to maintain document integrity)
+- **Navigation**: Click to jump to footnote definition
+
+#### **Footnote Operations**
 - **Insert**: Use command palette "Insert footnote" or assign a hotkey
-- **Delete**: Click the trash icon with confirmation prompts
+- **Delete**: Click the trash icon with different confirmations based on footnote type
+- **Renumber**: Enhanced dialog with selective gap filling and orphaned reference removal
 
 ### Navigation Tools
 - **📍 Jump to footnotes**: Navigate to the footnotes section in your document
 - **↩️ Return**: Go back to your last editing position
-- **🔢 Renumber**: Clean up gaps in footnote numbering
+- **🔢 Renumber**: Enhanced dialog for cleaning up footnote numbering issues
 - **👁️ View toggle**: Switch between outline and list views
 - **🔍 Search**: Filter footnotes by content or number
+
+### Enhanced Renumbering
+The renumber function now provides granular control with checkboxes for:
+- **Remove orphaned references**: Delete references that have no matching footnote definitions
+- **Fill numbering gaps**: Renumber footnotes sequentially to remove gaps
+- **Selective operation**: Choose either, both, or cancel based on your needs
 
 ### Search Features
 - **Real-time filtering**: Type to instantly filter footnotes
@@ -90,9 +125,11 @@ The Footnotes Manager is a powerful and intuitive Obsidian plugin designed to st
 
 ### Organization Features
 - **Hierarchical grouping**: Footnotes automatically grouped under document headers
+- **Multi-section support**: Same footnote appears in all relevant sections
 - **Collapsible sections**: Expand/collapse groups with ▶/▼ icons
 - **Bulk collapse/expand**: Use +/- button to toggle all sections
 - **Reference tracking**: See how many references each footnote has
+- **Unreferenced detection**: Special handling for footnotes without references
 
 ## Settings
 
@@ -118,30 +155,56 @@ Access settings in `Settings > Community Plugins > Footnotes Manager`:
 
 ### Organization
 - Use clear, descriptive headers to organize your footnotes effectively
-- Group related footnotes under appropriate sections
+- Multi-section footnotes will appear under all relevant headers automatically
 - Use the search function to quickly find specific footnotes in large documents
+- Check the "Unreferenced" section periodically to clean up unused footnotes
 
 ### Editing
-- Click directly on footnote content to edit
-- Use multi-line editing for longer footnotes
-- The plugin automatically handles footnote formatting
+- Click directly on footnote content to edit (referenced footnotes only)
+- Use multi-line editing for longer footnotes with full markdown support
+- The plugin automatically handles footnote formatting and rendering
+- Unreferenced footnotes are read-only to prevent creating orphaned content
 
 ### Navigation
-- Use reference buttons to check all uses of a footnote
+- Use reference buttons to check all uses of a footnote across sections
+- Copy icon indicates footnotes that appear in multiple sections
 - Click headers to quickly navigate to document sections
 - Use the return button after jumping to footnotes section
 
 ### Management
-- Regularly use the renumber function to clean up footnote numbering
+- Use the enhanced renumber function to clean up both gaps and orphaned references
 - Check reference counts to identify unused or heavily-referenced footnotes
-- Use search to audit footnote content
+- Multi-section footnotes show their total usage across all sections
+- Use search to audit footnote content and find duplicates
+
+## Advanced Features
+
+### Multi-Section Footnotes
+When the same footnote is referenced in multiple sections:
+- The footnote appears in **all relevant sections** in outline view
+- A **copy icon** indicates multi-section footnotes
+- Each section shows only **its own references**
+- **Full editing capability** is available from any section
+- **Tooltip** shows total number of sections where footnote appears
+
+### Unreferenced Footnote Handling
+- Automatically detected and grouped in special "Unreferenced" section
+- **Visual indicators**: Red text and subtle styling for easy identification
+- **Safe deletion**: Only delete option available (no editing)
+- **Clear separation**: Keeps unreferenced footnotes organized separately
+
+### Enhanced Renumbering
+- **Orphaned reference detection**: Finds references without matching definitions
+- **Gap analysis**: Identifies missing numbers in sequence
+- **Selective correction**: Choose which issues to fix with checkboxes
+- **Confirmation dialogs**: Clear explanations of what will be changed
 
 ## File Structure
 
 ```
 obsidian-footnotes-manager/
 ├── main.ts          # Core plugin logic and FootnotesView class
-├── styles.css       # Complete styling including sticky header
+├── styles.css       # Complete styling including multi-section support
 ├── manifest.json    # Plugin metadata
 ├── README.md        # Documentation
 └── LICENSE          # MIT License
@@ -169,7 +232,8 @@ npm run dev
 ### Code Structure
 - **FootnotesView**: Main UI component handling the sidebar panel
 - **FootnotesManagerPlugin**: Core plugin class with footnote processing logic
-- **Modal components**: Confirmation dialogs and user interactions
+- **Enhanced Modal components**: Confirmation dialogs and user interactions
+- **Multi-section support**: Logic for detecting and displaying cross-section footnotes
 - **CSS styling**: Modern, accessible design matching Obsidian's aesthetic
 
 ## Known Issues & Limitations
@@ -177,6 +241,7 @@ npm run dev
 - Complex markdown documents with unusual footnote formats may require manual adjustment
 - Performance may be affected with documents containing hundreds of footnotes
 - Plugin works best with standard markdown footnote syntax: `[^number]` and `[^number]: content`
+- Multi-section footnotes create visual duplicates (by design) which may increase visual complexity
 
 ## Roadmap
 
@@ -185,6 +250,7 @@ npm run dev
 - **Footnote templates**: Quick insertion of formatted footnotes
 - **Cross-document footnotes**: Link footnotes across multiple files
 - **Advanced search**: RegEx support and content filtering
+- **Footnote analytics**: Usage statistics and duplicate detection
 
 ## Troubleshooting
 
@@ -198,10 +264,20 @@ npm run dev
 - Check that footnote definitions are properly formatted
 - Try refreshing the panel by switching files
 
+### Multi-Section Issues
+- If footnotes don't appear in expected sections, check header structure
+- Ensure references are properly placed within sections
+- Copy icon should appear for footnotes with multiple references
+
 ### Performance Issues
 - Enable debug mode to identify bottlenecks
 - Consider splitting very large documents with many footnotes
 - Check console for error messages
+
+### Unreferenced Footnotes
+- Check the "Unreferenced" section at bottom of outline view
+- Verify footnote definitions exist in the document
+- Use enhanced renumber to clean up orphaned references
 
 ## Support
 
@@ -216,10 +292,29 @@ This plugin is licensed under the MIT License. See the LICENSE file for details.
 
 ## Release Notes
 
-### Version 1.1.0 (Current) - Enhanced UI & List View
+### Version 1.2.0 (Current) - Multi-Section & Unreferenced Support
+**🆕 Major New Features:**
+- **Multi-Section Footnotes**: Footnotes now appear in ALL sections where they're referenced
+- **Copy Icon Indicator**: Visual indicator (Lucide copy icon) for multi-section footnotes
+- **Unreferenced Footnote Detection**: Special "Unreferenced" section in outline view
+- **Enhanced Renumber Dialog**: Selective options for orphaned references and gap filling
+
+**🔧 Advanced Improvements:**
+- **Smart Section Analysis**: Footnotes analyzed per reference to determine section placement
+- **Filtered References**: Each section shows only its own footnote references
+- **Visual Indicators**: Red styling and "Unreferenced" badges for orphaned footnotes
+- **Selective Deletion**: Different confirmation dialogs based on footnote type
+
+**🎨 UI/UX Enhancements:**
+- **Subtle Styling**: Unreferenced footnotes use normal backgrounds with red text indicators
+- **Tooltip Support**: Hover information for multi-section footnotes
+- **Enhanced Modals**: Checkbox-based renumber dialog with clear options
+- **Improved Accessibility**: Better contrast and semantic markup
+
+### Version 1.1.0 - Enhanced UI & List View
 **🆕 New Features:**
 - **List View Mode**: Toggle between hierarchical outline view and simple sequential list view
-- **Sticky Header**: Header controls now stay visible while scrolling (like Obsidian's outline view)
+- **Sticky Header**: Header controls now stay visible while scrolling
 - **Modern Icons**: All buttons now use Obsidian's native `setIcon` system for consistency
 - **Enhanced Navigation**: Improved button styling and tooltips
 
@@ -228,12 +323,6 @@ This plugin is licensed under the MIT License. See the LICENSE file for details.
 - **Code Quality**: Eliminated duplicate methods and improved TypeScript structure
 - **UI Polish**: Enhanced button spacing, hover effects, and visual feedback
 - **Accessibility**: Better contrast and semantic markup throughout
-
-**🐛 Bug Fixes:**
-- Fixed compilation errors with duplicate method implementations
-- Resolved missing navigation button handlers
-- Improved editor detection and file handling
-- Enhanced skip refresh logic to prevent UI conflicts
 
 ### Version 1.0.0 - Initial Release
 **🎉 Core Features:**
@@ -253,6 +342,7 @@ This plugin is licensed under the MIT License. See the LICENSE file for details.
 - Built with the Obsidian API and TypeScript
 - Inspired by academic and technical writing workflows
 - Designed for efficient footnote management in long-form content
+- Uses Lucide icons for consistent visual design
 
 ---
 

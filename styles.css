@@ -1,16 +1,23 @@
 /*
-Footnotes Manager - Enhanced with navigation and renumbering features
+Footnotes Manager - Enhanced with unreferenced footnotes support
 */
 
 /* Panel Styles */
 .footnotes-header {
-	padding: 10px;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background-color: var(--background-primary);
 	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 10px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .footnotes-title {
 	margin: 0;
 	color: var(--text-normal);
+	font-size: 1.1em;
+	font-weight: 600;
 }
 
 .footnotes-empty {
@@ -22,6 +29,8 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 
 .footnotes-list {
 	padding: 5px;
+	margin-top: 0;
+	font-size: inherit;
 }
 
 /* Header Section Styles */
@@ -32,13 +41,13 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 .footnote-header {
 	display: flex;
 	align-items: center;
-	padding: 4px 8px;
+	padding: 6px 10px;
 	background-color: var(--background-secondary);
 	border-radius: 4px;
-	margin-bottom: 2px;
+	margin-bottom: 3px;
 	font-weight: 500;
 	color: var(--text-normal);
-	font-size: 13px;
+	font-size: 0.9em;
 	transition: background-color 0.1s ease;
 }
 
@@ -46,18 +55,45 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	background-color: var(--background-modifier-hover);
 }
 
+/* NEW: Special styling for unreferenced header */
+.footnote-unreferenced-header {
+	background-color: var(--background-secondary);
+	border-left: 3px solid var(--text-error);
+	font-weight: 600;
+}
+
+.footnote-unreferenced-header:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.footnote-unreferenced-header .footnote-header-text {
+	color: var(--text-error);
+}
+
 .footnote-collapse-icon {
 	margin-right: 6px;
 	cursor: pointer;
 	user-select: none;
-	font-size: 10px;
 	color: var(--text-muted);
 	min-width: 12px;
 	transition: color 0.1s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .footnote-collapse-icon:hover {
 	color: var(--text-normal);
+}
+
+.footnote-collapse-icon svg {
+	transition: transform 0.1s ease;
+	width: 14px;
+	height: 14px;
+}
+
+.footnote-collapse-icon:hover svg {
+	transform: scale(1.1);
 }
 
 .footnote-header-text {
@@ -72,16 +108,16 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 }
 
 .footnote-group-footnotes {
-	margin-left: 20px;
+	margin-left: 24px;
 	border-left: 2px solid var(--background-modifier-border);
-	padding-left: 8px;
-	margin-top: 4px;
+	padding-left: 10px;
+	margin-top: 6px;
 }
 
 /* Individual Footnote Styles */
 .footnote-item {
-	padding: 12px;
-	margin: 4px 0;
+	padding: 14px;
+	margin: 6px 0;
 	border-radius: 6px;
 	cursor: pointer;
 	border: 1px solid transparent;
@@ -104,6 +140,17 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* NEW: Special styling for unreferenced footnotes */
+.footnote-item.footnote-unreferenced {
+	border-left: 3px solid var(--text-error);
+	background-color: var(--background-primary);
+}
+
+.footnote-item.footnote-unreferenced:hover:not(.footnote-editing) {
+	background-color: var(--background-modifier-hover);
+	border-left-color: var(--text-error);
+}
+
 /* Footnote Header Info */
 .footnote-header-info {
 	display: flex;
@@ -112,23 +159,72 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	margin-bottom: 8px;
 }
 
+.footnote-number-container {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
 .footnote-number {
 	font-weight: 600;
 	color: var(--interactive-accent);
-	font-size: 14px;
+	font-size: 0.85em;
 	background-color: var(--background-secondary);
-	padding: 2px 6px;
+	padding: 3px 8px;
 	border-radius: 3px;
 	border: 1px solid var(--background-modifier-border);
 }
 
+/* NEW: Multi-section footnote icon */
+.footnote-multi-section-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	transition: all 0.1s ease;
+}
+
+.footnote-multi-section-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.footnote-multi-section-icon:hover {
+	color: var(--interactive-accent);
+	transform: scale(1.1);
+}
+
+.footnote-item:hover .footnote-multi-section-icon {
+	color: var(--interactive-accent);
+}
+
+/* NEW: Unreferenced footnote number styling */
+.footnote-unreferenced .footnote-number {
+	color: var(--text-error);
+	background-color: var(--background-secondary);
+	border-color: var(--background-modifier-border);
+}
+
 .footnote-ref-count {
 	color: var(--text-muted);
-	font-size: 11px;
+	font-size: 0.75em;
 	background-color: var(--background-secondary);
-	padding: 1px 4px;
+	padding: 2px 6px;
 	border-radius: 2px;
 	border: 1px solid var(--background-modifier-border);
+}
+
+/* NEW: Unreferenced indicator styling */
+.footnote-unreferenced-indicator {
+	color: var(--text-error);
+	font-size: 0.75em;
+	background-color: var(--background-secondary);
+	padding: 2px 6px;
+	border-radius: 2px;
+	border: 1px solid var(--background-modifier-border);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
 .footnote-content {
@@ -138,15 +234,47 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 
 .footnote-text {
 	color: var(--text-normal);
-	font-size: 14px;
+	font-size: 0.9em;
+	line-height: 1.5;
 	margin-bottom: 8px;
 	word-wrap: break-word;
 	border-radius: 3px;
-	padding: 4px 6px;
-	min-height: 20px;
+	padding: 6px 8px;
+	min-height: 24px;
 	white-space: pre-wrap;
 	background-color: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
+}
+
+/* Display vs Edit states for footnote content */
+.footnote-display {
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+}
+
+.footnote-display:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* NEW: Non-editable display for unreferenced footnotes */
+.footnote-unreferenced .footnote-display {
+	cursor: default;
+}
+
+.footnote-unreferenced .footnote-display:hover {
+	background-color: var(--background-secondary);
+}
+
+.footnote-edit {
+	display: none;
+}
+
+.footnote-editing .footnote-display {
+	display: none;
+}
+
+.footnote-editing .footnote-edit {
+	display: block;
 }
 
 .footnote-text[contenteditable="true"]:focus {
@@ -156,14 +284,14 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 
 .footnote-textarea {
 	width: 100%;
-	min-height: 60px;
+	min-height: 70px;
 	resize: vertical;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 3px;
-	padding: 6px 8px;
+	padding: 8px 10px;
 	font-family: var(--font-text);
-	font-size: 14px;
-	line-height: 1.4;
+	font-size: 0.9em;
+	line-height: 1.5;
 	color: var(--text-normal);
 	background-color: var(--background-primary);
 	transition: border-color 0.1s ease;
@@ -201,9 +329,9 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 }
 
 .footnote-reference-btn {
-	margin: 2px 4px 2px 0;
-	padding: 2px 6px;
-	font-size: 11px;
+	margin: 3px 6px 3px 0;
+	padding: 4px 8px;
+	font-size: 0.75em;
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border: none;
@@ -282,12 +410,24 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	transform: translateY(0);
 }
 
+.footnote-delete-btn svg {
+	transition: all 0.1s ease;
+	width: 14px;
+	height: 14px;
+}
+
+.footnote-delete-btn:hover svg {
+	color: var(--text-error);
+	transform: scale(1.1);
+}
+
 /* Title Row and Controls */
 .footnotes-title-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 8px;
+	min-height: 32px;
 }
 
 .footnotes-title {
@@ -299,6 +439,9 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	display: flex;
 	gap: 4px;
 	align-items: center;
+	flex-shrink: 0;
+	min-width: 180px;
+	justify-content: flex-end;
 }
 
 /* Navigation and Control Button Styles */
@@ -306,8 +449,8 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 32px;
-	height: 28px;
+	width: 36px;
+	height: 32px;
 	padding: 0;
 	border: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
@@ -315,12 +458,16 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	border-radius: 4px;
 	cursor: pointer;
 	transition: all 0.1s ease;
+	min-width: 36px;
+	min-height: 32px;
+	flex-shrink: 0;
 }
 
 .footnotes-control-btn:hover:not(:disabled) {
 	background: var(--background-modifier-hover);
 	border-color: var(--interactive-accent);
 	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .footnotes-control-btn:disabled {
@@ -331,6 +478,17 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 .footnotes-control-btn:active:not(:disabled) {
 	background: var(--background-modifier-active);
 	transform: translateY(1px);
+	animation: buttonPress 0.1s ease-in-out;
+}
+
+.footnotes-control-btn svg {
+	transition: all 0.1s ease;
+	width: 18px;
+	height: 18px;
+}
+
+.footnotes-control-btn:hover svg {
+	transform: scale(1.05);
 }
 
 /* Specific button styles */
@@ -338,7 +496,15 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	color: var(--color-accent);
 }
 
+.nav-btn:hover svg {
+	color: var(--color-accent);
+}
+
 .return-btn svg {
+	color: var(--color-green);
+}
+
+.return-btn:hover svg {
 	color: var(--color-green);
 }
 
@@ -346,13 +512,26 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	color: var(--color-orange);
 }
 
+.renumber-btn:hover svg {
+	color: var(--color-orange);
+}
+
+.list-view-btn svg {
+	color: var(--color-blue);
+}
+
+.list-view-btn:hover svg {
+	color: var(--color-blue);
+	transform: scale(1.05);
+}
+
 /* Toggle Button Styles */
 .footnotes-toggle-btn {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 32px;
-	height: 28px;
+	width: 36px;
+	height: 32px;
 	padding: 0;
 	border: 1px solid var(--background-modifier-border);
 	background: var(--background-secondary);
@@ -360,11 +539,16 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	border-radius: 4px;
 	cursor: pointer;
 	transition: all 0.1s ease;
+	margin-left: 4px;
+	min-width: 36px;
+	min-height: 32px;
+	flex-shrink: 0;
 }
 
 .footnotes-toggle-btn:hover:not(:disabled) {
 	background: var(--background-modifier-hover);
 	border-color: var(--interactive-accent);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .footnotes-toggle-btn:disabled {
@@ -375,20 +559,18 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 .footnotes-toggle-btn:active:not(:disabled) {
 	background: var(--background-modifier-active);
 	transform: translateY(1px);
+	animation: buttonPress 0.1s ease-in-out;
 }
 
-.footnotes-toggle-icon {
-	font-size: 18px;
-	font-weight: bold;
-	line-height: 1;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: var(--text-muted);
+.footnotes-toggle-btn svg {
+	transition: all 0.1s ease;
+	width: 18px;
+	height: 18px;
 }
 
-.footnotes-toggle-btn:hover .footnotes-toggle-icon {
-	color: var(--text-normal);
+.footnotes-toggle-btn:hover svg {
+	color: var(--interactive-accent);
+	transform: scale(1.05);
 }
 
 /* Search functionality styles */
@@ -399,17 +581,18 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 
 .footnotes-search-input {
 	width: 100%;
-	padding: 6px 30px 6px 8px;
+	padding: 8px 32px 8px 10px;
 	border: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	color: var(--text-normal);
 	border-radius: 4px;
-	font-size: 13px;
+	font-size: 0.9em;
 	transition: border-color 0.1s ease;
 }
 
 .footnotes-search-input:focus {
-	outline: none;
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
 	border-color: var(--interactive-accent);
 }
 
@@ -447,6 +630,16 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	color: var(--text-normal);
 }
 
+.footnotes-clear-search svg {
+	width: 14px;
+	height: 14px;
+	transition: all 0.1s ease;
+}
+
+.footnotes-clear-search:hover svg {
+	transform: scale(1.1);
+}
+
 /* Search highlighting styles */
 .search-highlight {
 	background-color: var(--text-highlight-bg);
@@ -456,15 +649,85 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	font-weight: 500;
 }
 
-/* Renumber Modal Styles */
-.renumber-description {
+/* NEW: Enhanced Renumber Modal Styles */
+.renumber-description-container {
 	margin-bottom: 16px;
+}
+
+.renumber-section {
+	margin-bottom: 12px;
 	padding: 12px;
 	background-color: var(--background-secondary);
 	border-radius: 6px;
 	border-left: 4px solid var(--interactive-accent);
+}
+
+.renumber-section h3 {
+	margin: 0 0 8px 0;
+	color: var(--text-normal);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.renumber-section p {
+	margin: 0;
 	color: var(--text-normal);
 	line-height: 1.4;
+	font-size: 13px;
+}
+
+.renumber-no-issues {
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--color-green);
+	color: var(--text-normal);
+	margin: 0;
+}
+
+.renumber-options {
+	margin-bottom: 16px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--color-blue);
+}
+
+.renumber-options h3 {
+	margin: 0 0 12px 0;
+	color: var(--text-normal);
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.renumber-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	padding: 8px;
+	background-color: var(--background-primary);
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	transition: all 0.1s ease;
+}
+
+.renumber-option:hover {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.renumber-option input[type="checkbox"] {
+	margin: 0;
+	accent-color: var(--interactive-accent);
+}
+
+.renumber-option label {
+	margin: 0;
+	color: var(--text-normal);
+	font-size: 13px;
+	cursor: pointer;
+	flex: 1;
 }
 
 .renumber-warning {
@@ -501,8 +764,13 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	border-color: var(--interactive-accent);
 }
 
-.renumber-buttons button.mod-cta:hover {
+.renumber-buttons button.mod-cta:hover:not(:disabled) {
 	background-color: var(--interactive-accent-hover);
+}
+
+.renumber-buttons button.mod-cta:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .renumber-buttons button:not(.mod-cta) {
@@ -541,8 +809,175 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	line-height: 1.4;
 }
 
+/* List View Styles */
+.footnote-list-item {
+	display: flex;
+	align-items: flex-start;
+	margin-bottom: 8px;
+	padding: 8px;
+	border-radius: 4px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.footnote-sequence {
+	font-weight: 600;
+	color: var(--text-muted);
+	font-size: 0.9em;
+	margin-right: 12px;
+	margin-top: 12px;
+	min-width: 24px;
+	flex-shrink: 0;
+}
+
+.footnote-list-item .footnote-item {
+	flex: 1;
+	margin: 0;
+	background-color: transparent;
+	border: none;
+	padding: 0;
+}
+
+.footnote-list-item .footnote-item:hover {
+	background-color: var(--background-modifier-hover);
+	border-radius: 4px;
+}
+
+.footnote-list-item:nth-child(even) {
+	background-color: var(--background-primary);
+}
+
+.footnote-list-item:nth-child(odd) {
+	background-color: var(--background-secondary);
+}
+
+/* Styling for rendered markdown in footnotes */
+.footnote-display em {
+	font-style: italic;
+}
+
+.footnote-display strong {
+	font-weight: bold;
+}
+
+.footnote-display code {
+	background-color: var(--code-background);
+	color: var(--code-normal);
+	padding: 2px 4px;
+	border-radius: 3px;
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+}
+
+.footnote-display a {
+	color: var(--link-color);
+	text-decoration: none;
+}
+
+.footnote-display a:hover {
+	text-decoration: underline;
+}
+
+.footnote-display blockquote {
+	border-left: 3px solid var(--quote-opening-modifier);
+	padding-left: 12px;
+	margin: 8px 0;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.footnote-display ul, .footnote-display ol {
+	margin: 4px 0;
+	padding-left: 20px;
+}
+
+.footnote-display li {
+	margin: 2px 0;
+}
+
+.footnote-display h1, .footnote-display h2, .footnote-display h3, 
+.footnote-display h4, .footnote-display h5, .footnote-display h6 {
+	margin: 8px 0 4px 0;
+	font-weight: bold;
+}
+
+.footnote-display h1 { font-size: 1.2em; }
+.footnote-display h2 { font-size: 1.15em; }
+.footnote-display h3 { font-size: 1.1em; }
+.footnote-display h4, .footnote-display h5, .footnote-display h6 { font-size: 1.05em; }
+
+.footnote-display pre {
+	background-color: var(--code-background);
+	border-radius: 4px;
+	padding: 8px;
+	overflow-x: auto;
+	margin: 4px 0;
+}
+
+.footnote-display pre code {
+	background: none;
+	padding: 0;
+}
+
+.footnote-display del {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+.footnote-display mark {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-normal);
+	padding: 1px 2px;
+	border-radius: 2px;
+}
+
+/* Empty footnote placeholder styling */
+.footnote-empty-placeholder {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.footnote-display .search-highlight {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-on-accent);
+	padding: 1px 2px;
+	border-radius: 2px;
+	font-weight: 500;
+}
+
+.footnote-display > *:first-child {
+	margin-top: 0;
+}
+
+.footnote-display > *:last-child {
+	margin-bottom: 0;
+}
+
 /* Responsive adjustments for smaller screens */
-@media (max-width: 300px) {
+@media (max-width: 500px) {
+	.footnotes-controls {
+		min-width: auto;
+		flex-wrap: wrap;
+		gap: 2px;
+	}
+	
+	.footnotes-control-btn,
+	.footnotes-toggle-btn {
+		min-width: 32px;
+		min-height: 28px;
+	}
+	
+	.footnote-list-item {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.footnote-sequence {
+		margin-right: 0;
+		margin-bottom: 8px;
+		margin-top: 0;
+	}
+	
 	.footnotes-title-row {
 		flex-direction: column;
 		align-items: center;
@@ -566,13 +1001,79 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	}
 }
 
-/* Hover effects for better UX */
-.footnotes-control-btn:hover {
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* High DPI and text size improvements */
+@media (min-resolution: 144dpi), (min-resolution: 1.5dppx) {
+	.footnotes-header {
+		padding: 14px;
+	}
+	
+	.footnote-item {
+		padding: 16px;
+		margin: 8px 0;
+	}
+	
+	.footnote-text,
+	.footnote-textarea {
+		font-size: 1em;
+		padding: 8px 10px;
+	}
+	
+	.footnotes-control-btn,
+	.footnotes-toggle-btn {
+		width: 40px;
+		height: 36px;
+	}
+	
+	.footnotes-control-btn svg,
+	.footnotes-toggle-btn svg {
+		width: 20px;
+		height: 20px;
+	}
+	
+	.footnote-collapse-icon svg {
+		width: 16px;
+		height: 16px;
+	}
 }
 
-.footnotes-toggle-btn:hover {
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* Extra large screens (4K+) */
+@media (min-width: 2560px) {
+	.footnotes-title {
+		font-size: 1.25em;
+	}
+	
+	.footnote-header {
+		font-size: 1em;
+		padding: 8px 12px;
+	}
+	
+	.footnote-text,
+	.footnote-textarea {
+		font-size: 1.1em;
+		padding: 10px 12px;
+	}
+	
+	.footnotes-search-input {
+		font-size: 1em;
+		padding: 10px 36px 10px 12px;
+	}
+	
+	.footnote-number {
+		font-size: 1em;
+		padding: 4px 10px;
+	}
+	
+	.footnote-ref-count,
+	.footnote-unreferenced-indicator {
+		font-size: 0.85em;
+		padding: 3px 8px;
+	}
+	
+	.footnote-reference-btn {
+		font-size: 0.85em;
+		padding: 5px 10px;
+		margin: 4px 8px 4px 0;
+	}
 }
 
 /* Focus styles for accessibility */
@@ -588,11 +1089,6 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	0% { transform: scale(1); }
 	50% { transform: scale(0.95); }
 	100% { transform: scale(1); }
-}
-
-.footnotes-control-btn:active,
-.footnotes-toggle-btn:active {
-	animation: buttonPress 0.1s ease-in-out;
 }
 
 /* Special styling for empty states */
@@ -613,617 +1109,34 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	color: var(--text-on-accent);
 }
 
-/* CSS FIXES - Add these updates to your styles.css */
-
-/* FIX: Ensure toggle button is properly styled and visible */
-.footnotes-toggle-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 32px;
-	height: 28px;
-	padding: 0;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.1s ease;
-	margin-left: 4px; /* Add some spacing from other buttons */
+/* NEW: Special hover effects for unreferenced footnotes */
+.footnote-item.footnote-unreferenced:hover .footnote-number {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
-.footnotes-toggle-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-}
-
-.footnotes-toggle-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-toggle-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-}
-
-/* FIX: Update the collapse icon styles for Lucide icons */
-.footnote-collapse-icon {
-	margin-right: 6px;
-	cursor: pointer;
-	user-select: none;
-	color: var(--text-muted);
-	min-width: 12px;
-	transition: color 0.1s ease;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.footnote-collapse-icon:hover {
-	color: var(--text-normal);
-}
-
-.footnote-collapse-icon svg {
-	transition: transform 0.1s ease;
-}
-
-.footnote-collapse-icon:hover svg {
-	transform: scale(1.1);
-}
-
-/* FIX: Ensure controls container has proper layout */
-.footnotes-controls {
-	display: flex;
-	gap: 4px;
-	align-items: center;
-	flex-shrink: 0; /* Prevent controls from being squeezed */
-}
-
-/* FIX: Make sure the title row doesn't hide the toggle button */
-.footnotes-title-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 8px;
-	min-height: 32px; /* Ensure minimum height for buttons */
-}
-
-/* FIX: Icon styling within toggle button */
-.footnotes-toggle-btn svg {
-	transition: all 0.1s ease;
-}
-
-.footnotes-toggle-btn:hover svg {
-	color: var(--interactive-accent);
-	transform: scale(1.05);
-}
-
-/* CSS UPDATES for setIcon compatibility - Add these to your styles.css */
-
-/* Update collapse icon styles for setIcon */
-.footnote-collapse-icon {
-	margin-right: 6px;
-	cursor: pointer;
-	user-select: none;
-	color: var(--text-muted);
-	min-width: 12px;
-	transition: color 0.1s ease;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.footnote-collapse-icon:hover {
-	color: var(--text-normal);
-}
-
-.footnote-collapse-icon svg {
-	transition: transform 0.1s ease;
-	width: 12px;
-	height: 12px;
-}
-
-.footnote-collapse-icon:hover svg {
-	transform: scale(1.1);
-}
-
-/* Update toggle button styles for setIcon */
-.footnotes-toggle-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 32px;
-	height: 28px;
-	padding: 0;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.1s ease;
-	margin-left: 4px;
-}
-
-.footnotes-toggle-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-}
-
-.footnotes-toggle-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-toggle-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-}
-
-.footnotes-toggle-btn svg {
-	transition: all 0.1s ease;
-	width: 16px;
-	height: 16px;
-}
-
-.footnotes-toggle-btn:hover svg {
-	color: var(--interactive-accent);
-	transform: scale(1.05);
-}
-
-/* Update control button styles for setIcon */
-.footnotes-control-btn svg {
-	transition: all 0.1s ease;
-	width: 16px;
-	height: 16px;
-}
-
-.footnotes-control-btn:hover svg {
-	transform: scale(1.05);
-}
-
-/* Specific button icon colors */
-.nav-btn:hover svg {
-	color: var(--color-accent);
-}
-
-.return-btn:hover svg {
-	color: var(--color-green);
-}
-
-.renumber-btn:hover svg {
-	color: var(--color-orange);
-}
-
-/* Delete button styles for setIcon */
-.footnote-delete-btn svg {
-	transition: all 0.1s ease;
-	width: 14px;
-	height: 14px;
-}
-
-.footnote-delete-btn:hover svg {
-	color: var(--text-error);
-	transform: scale(1.1);
-}
-
-/* Clear search button styles for setIcon */
-.footnotes-clear-search svg {
-	width: 14px;
-	height: 14px;
-	transition: all 0.1s ease;
-}
-
-.footnotes-clear-search:hover svg {
-	transform: scale(1.1);
-}
-
-/* HIGH DPI AND TEXT SIZE FIXES - Add these to your styles.css */
-
-/* Base font size improvements for better scaling */
-.footnotes-header {
-    padding: 12px;
-    border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.footnotes-title {
-    margin: 0;
-    color: var(--text-normal);
-    font-size: 1.1em; /* Slightly larger title */
-    font-weight: 600;
-}
-
-/* Improved text sizes for better readability */
-.footnote-header {
-    display: flex;
-    align-items: center;
-    padding: 6px 10px; /* Increased padding */
-    background-color: var(--background-secondary);
-    border-radius: 4px;
-    margin-bottom: 3px;
-    font-weight: 500;
-    color: var(--text-normal);
-    font-size: 0.9em; /* Relative to user's base font size */
-    transition: background-color 0.1s ease;
-}
-
-/* Better footnote item sizing */
-.footnote-item {
-    padding: 14px; /* Increased padding */
-    margin: 6px 0; /* Increased margin */
-    border-radius: 6px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.1s ease;
-    position: relative;
-    background-color: var(--background-primary);
-}
-
-/* Improved footnote text sizing */
-.footnote-text {
-    color: var(--text-normal);
-    font-size: 0.9em; /* Relative sizing */
-    line-height: 1.5;
-    margin-bottom: 8px;
-    word-wrap: break-word;
-    border-radius: 3px;
-    padding: 6px 8px; /* Increased padding */
-    min-height: 24px; /* Increased min height */
-    white-space: pre-wrap;
-    background-color: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-}
-
-.footnote-textarea {
-    width: 100%;
-    min-height: 70px; /* Increased min height */
-    resize: vertical;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 3px;
-    padding: 8px 10px; /* Increased padding */
-    font-family: var(--font-text);
-    font-size: 0.9em; /* Relative sizing */
-    line-height: 1.5;
-    color: var(--text-normal);
-    background-color: var(--background-primary);
-    transition: border-color 0.1s ease;
-    box-sizing: border-box;
-}
-
-/* Better button sizing for high DPI */
-.footnotes-control-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px; /* Increased from 32px */
-    height: 32px; /* Increased from 28px */
-    padding: 0;
-    border: 1px solid var(--background-modifier-border);
-    background: var(--background-secondary);
-    color: var(--text-normal);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-}
-
-.footnotes-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px; /* Increased from 32px */
-    height: 32px; /* Increased from 28px */
-    padding: 0;
-    border: 1px solid var(--background-modifier-border);
-    background: var(--background-secondary);
-    color: var(--text-normal);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    margin-left: 4px;
-}
-
-/* Better icon sizing */
-.footnotes-control-btn svg {
-    transition: all 0.1s ease;
-    width: 18px; /* Increased from 16px */
-    height: 18px;
-}
-
-.footnotes-toggle-btn svg {
-    transition: all 0.1s ease;
-    width: 18px; /* Increased from 16px */
-    height: 18px;
-}
-
-.footnote-collapse-icon svg {
-    transition: transform 0.1s ease;
-    width: 14px; /* Increased from 12px */
-    height: 14px;
-}
-
-/* Better search input sizing */
-.footnotes-search-input {
-    width: 100%;
-    padding: 8px 32px 8px 10px; /* Increased padding */
-    border: 1px solid var(--background-modifier-border);
-    background: var(--background-primary);
-    color: var(--text-normal);
-    border-radius: 4px;
-    font-size: 0.9em; /* Relative sizing */
-    transition: border-color 0.1s ease;
-}
-
-/* Better footnote number and count display */
-.footnote-number {
-    font-weight: 600;
-    color: var(--interactive-accent);
-    font-size: 0.85em; /* Relative sizing */
-    background-color: var(--background-secondary);
-    padding: 3px 8px; /* Increased padding */
-    border-radius: 3px;
-    border: 1px solid var(--background-modifier-border);
-}
-
-.footnote-ref-count {
-    color: var(--text-muted);
-    font-size: 0.75em; /* Relative sizing */
-    background-color: var(--background-secondary);
-    padding: 2px 6px; /* Increased padding */
-    border-radius: 2px;
-    border: 1px solid var(--background-modifier-border);
-}
-
-/* Better reference button sizing */
-.footnote-reference-btn {
-    margin: 3px 6px 3px 0; /* Increased margins */
-    padding: 4px 8px; /* Increased padding */
-    font-size: 0.75em; /* Relative sizing */
-    background-color: var(--interactive-accent);
-    color: var(--text-on-accent);
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-}
-
-/* High DPI scaling support */
-@media (min-resolution: 144dpi), (min-resolution: 1.5dppx) {
-    .footnotes-header {
-        padding: 14px;
-    }
-    
-    .footnote-item {
-        padding: 16px;
-        margin: 8px 0;
-    }
-    
-    .footnote-text,
-    .footnote-textarea {
-        font-size: 1em; /* Slightly larger on high DPI */
-        padding: 8px 10px;
-    }
-    
-    .footnotes-control-btn,
-    .footnotes-toggle-btn {
-        width: 40px;
-        height: 36px;
-    }
-    
-    .footnotes-control-btn svg,
-    .footnotes-toggle-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-    
-    .footnote-collapse-icon svg {
-        width: 16px;
-        height: 16px;
-    }
-}
-
-/* Extra large screens (4K+) */
-@media (min-width: 2560px) {
-    .footnotes-title {
-        font-size: 1.25em;
-    }
-    
-    .footnote-header {
-        font-size: 1em;
-        padding: 8px 12px;
-    }
-    
-    .footnote-text,
-    .footnote-textarea {
-        font-size: 1.1em;
-        padding: 10px 12px;
-    }
-    
-    .footnotes-search-input {
-        font-size: 1em;
-        padding: 10px 36px 10px 12px;
-    }
-    
-    .footnote-number {
-        font-size: 1em;
-        padding: 4px 10px;
-    }
-    
-    .footnote-ref-count {
-        font-size: 0.85em;
-        padding: 3px 8px;
-    }
-    
-    .footnote-reference-btn {
-        font-size: 0.85em;
-        padding: 5px 10px;
-        margin: 4px 8px 4px 0;
-    }
-}
-
-/* User preference respect - use system font scaling */
-.footnotes-list {
-    padding: 6px;
-    font-size: inherit; /* Respect user's font size settings */
-}
-
-/* Better spacing for grouped footnotes */
-.footnote-group-footnotes {
-    margin-left: 24px; /* Increased from 20px */
-    border-left: 2px solid var(--background-modifier-border);
-    padding-left: 10px; /* Increased from 8px */
-    margin-top: 6px; /* Increased from 4px */
-}
-
-/* CSS for List View functionality */
-
-/* List View button styling */
-.list-view-btn svg {
-    color: var(--color-blue);
-}
-
-.list-view-btn:hover svg {
-    color: var(--color-blue);
-    transform: scale(1.05);
-}
-
-/* List view specific styles */
-.footnote-list-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 8px;
-    padding: 8px;
-    border-radius: 4px;
-    background-color: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-}
-
-.footnote-sequence {
-    font-weight: 600;
-    color: var(--text-muted);
-    font-size: 0.9em;
-    margin-right: 12px;
-    margin-top: 12px; /* Align with footnote header */
-    min-width: 24px;
-    flex-shrink: 0;
-}
-
-/* Adjust footnote item in list view */
-.footnote-list-item .footnote-item {
-    flex: 1;
-    margin: 0;
-    background-color: transparent;
-    border: none;
-    padding: 0;
-}
-
-/* Better spacing for list view */
-.footnote-list-item .footnote-item:hover {
-    background-color: var(--background-modifier-hover);
-    border-radius: 4px;
-}
-
-/* Ensure controls container has space for the new button */
-.footnotes-controls {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    flex-shrink: 0;
-    min-width: 180px; /* Increased to accommodate list view button */
-    justify-content: flex-end;
-}
-
-/* Make sure all buttons are properly sized */
-.footnotes-control-btn,
-.footnotes-toggle-btn {
-    min-width: 36px;
-    min-height: 32px;
-    flex-shrink: 0;
+.footnote-item.footnote-unreferenced:hover .footnote-unreferenced-indicator {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
 /* Visual indication when in list view mode */
 .footnotes-list[data-view="list"] {
-    border-left: 3px solid var(--color-blue);
-    padding-left: 8px;
-}
-
-/* Hide outline-specific elements in list view */
-.footnotes-list[data-view="list"] .footnote-header-section,
-.footnotes-list[data-view="list"] .footnote-group-content,
-.footnotes-list[data-view="list"] .footnote-group-footnotes {
-    display: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 500px) {
-    .footnotes-controls {
-        min-width: auto;
-        flex-wrap: wrap;
-        gap: 2px;
-    }
-    
-    .footnotes-control-btn,
-    .footnotes-toggle-btn {
-        min-width: 32px;
-        min-height: 28px;
-    }
-    
-    .footnote-list-item {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .footnote-sequence {
-        margin-right: 0;
-        margin-bottom: 8px;
-        margin-top: 0;
-    }
-}
-
-/* Animation for view transitions */
-.footnotes-list {
-    transition: all 0.2s ease-in-out;
+	border-left: 3px solid var(--color-blue);
+	padding-left: 8px;
 }
 
 /* Enhanced visual feedback for list view button */
 .list-view-btn[data-active="true"] {
-    background-color: var(--interactive-accent);
-    border-color: var(--interactive-accent);
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
 }
 
 .list-view-btn[data-active="true"] svg {
-    color: var(--text-on-accent);
+	color: var(--text-on-accent);
 }
 
-/* Better visual separation in list view */
-.footnote-list-item:nth-child(even) {
-    background-color: var(--background-primary);
-}
-
-.footnote-list-item:nth-child(odd) {
-    background-color: var(--background-secondary);
-}
-
-/* ADD THIS TO YOUR styles.css FILE */
-
-/* Make the footnotes header sticky */
-.footnotes-header {
-	position: sticky;
-	top: 0;
-	z-index: 10;
-	background-color: var(--background-primary);
-	border-bottom: 1px solid var(--background-modifier-border);
-	padding: 10px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Ensure the footnotes list has proper spacing */
-.footnotes-list {
-	padding: 5px;
-	/* Remove any top margin that might interfere with sticky header */
-	margin-top: 0;
-}
-
-/* Optional: Add a subtle shadow when scrolling */
+/* Additional header styling for better visual hierarchy */
 .footnotes-header::after {
 	content: '';
 	position: absolute;
@@ -1235,133 +1148,13 @@ Footnotes Manager - Enhanced with navigation and renumbering features
 	opacity: 0.5;
 }
 
-/* Add these styles to your styles.css file */
-
-/* Display vs Edit states for footnote content */
-.footnote-display {
-    cursor: pointer;
-    transition: background-color 0.1s ease;
+/* Transition effects for better UX */
+.footnotes-list {
+	transition: all 0.2s ease-in-out;
 }
 
-.footnote-display:hover {
-    background-color: var(--background-modifier-hover);
-}
-
-.footnote-edit {
-    display: none; /* Hidden by default, shown during editing */
-}
-
-.footnote-editing .footnote-display {
-    display: none;
-}
-
-.footnote-editing .footnote-edit {
-    display: block;
-}
-
-/* Styling for rendered markdown in footnotes */
-.footnote-display em {
-    font-style: italic;
-}
-
-.footnote-display strong {
-    font-weight: bold;
-}
-
-.footnote-display code {
-    background-color: var(--code-background);
-    color: var(--code-normal);
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: var(--font-monospace);
-    font-size: 0.9em;
-}
-
-.footnote-display a {
-    color: var(--link-color);
-    text-decoration: none;
-}
-
-.footnote-display a:hover {
-    text-decoration: underline;
-}
-
-.footnote-display blockquote {
-    border-left: 3px solid var(--quote-opening-modifier);
-    padding-left: 12px;
-    margin: 8px 0;
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-.footnote-display ul, .footnote-display ol {
-    margin: 4px 0;
-    padding-left: 20px;
-}
-
-.footnote-display li {
-    margin: 2px 0;
-}
-
-.footnote-display h1, .footnote-display h2, .footnote-display h3, 
-.footnote-display h4, .footnote-display h5, .footnote-display h6 {
-    margin: 8px 0 4px 0;
-    font-weight: bold;
-}
-
-.footnote-display h1 { font-size: 1.2em; }
-.footnote-display h2 { font-size: 1.15em; }
-.footnote-display h3 { font-size: 1.1em; }
-.footnote-display h4, .footnote-display h5, .footnote-display h6 { font-size: 1.05em; }
-
-/* Empty footnote placeholder styling */
-.footnote-empty-placeholder {
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* Ensure search highlighting works in rendered content */
-.footnote-display .search-highlight {
-    background-color: var(--text-highlight-bg);
-    color: var(--text-on-accent);
-    padding: 1px 2px;
-    border-radius: 2px;
-    font-weight: 500;
-}
-
-/* Adjust spacing for rendered content */
-.footnote-display > *:first-child {
-    margin-top: 0;
-}
-
-.footnote-display > *:last-child {
-    margin-bottom: 0;
-}
-
-/* Handle markdown in multi-line footnotes */
-.footnote-display pre {
-    background-color: var(--code-background);
-    border-radius: 4px;
-    padding: 8px;
-    overflow-x: auto;
-    margin: 4px 0;
-}
-
-.footnote-display pre code {
-    background: none;
-    padding: 0;
-}
-
-/* Strikethrough support */
-.footnote-display del {
-    text-decoration: line-through;
-    opacity: 0.7;
-}
-
-/* Highlight support */
-.footnote-display mark {
-    background-color: var(--text-highlight-bg);
-    color: var(--text-normal);
-    padding: 1px 2px;
-    border-radius: 2px;
+/* Improved hover effects for better UX */
+.footnotes-control-btn:hover,
+.footnotes-toggle-btn:hover {
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

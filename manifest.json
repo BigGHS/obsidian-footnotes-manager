@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-footnotes-manager",
 	"name": "Footnotes Manager",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"minAppVersion": "0.15.0",
-	"description": "Manage footnotes in your Obsidian notes with a dedicated side panel. Edit, delete, and navigate footnotes easily. Track reference counts and safely manage duplicate references. NEW: Added a second simple list view",
+	"description": "Manage footnotes in your Obsidian notes with a dedicated side panel. Edit, delete, and navigate footnotes easily. Track reference counts and safely manage duplicate references.",
 	"author": "Graham Smale",
 	"authorUrl": "https://github.com/BigGHS/obsidian-footnotes-manager",
 	"fundingUrl": "https://buymeacoffee.com/yourusername",
