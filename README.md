@@ -292,7 +292,7 @@ This plugin is licensed under the MIT License. See the LICENSE file for details.
 
 ## Release Notes
 
-### Version 1.2.0 (Current) - Multi-Section & Unreferenced Support
+### Version 1.2.0 (Current) - Multi-Section & Unreferenced Footnotes Support
 **🆕 Major New Features:**
 - **Multi-Section Footnotes**: Footnotes now appear in ALL sections where they're referenced
 - **Copy Icon Indicator**: Visual indicator (Lucide copy icon) for multi-section footnotes
