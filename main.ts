@@ -537,152 +537,156 @@ class FootnotesView extends ItemView {
 
 	// UPDATED: processFootnotes method with unreferenced footnotes handling
 	private processFootnotes(
-		content: string,
-		container: Element,
-		toggleBtn ? : HTMLButtonElement,
-		toggleIcon ? : HTMLElement,
-		searchInput ? : HTMLInputElement,
-		clearSearchBtn ? : HTMLButtonElement,
-		navBtn ? : HTMLButtonElement,
-		returnBtn ? : HTMLButtonElement,
-		renumberBtn ? : HTMLButtonElement,
-		listViewBtn ? : HTMLButtonElement
+	    content: string,
+	    container: Element,
+	    toggleBtn?: HTMLButtonElement,
+	    toggleIcon?: HTMLElement,
+	    searchInput?: HTMLInputElement,
+	    clearSearchBtn?: HTMLButtonElement,
+	    navBtn?: HTMLButtonElement,
+	    returnBtn?: HTMLButtonElement,
+	    renumberBtn?: HTMLButtonElement,
+	    listViewBtn?: HTMLButtonElement
 	) {
-		this.debug('Processing footnotes for content of length:', content.length, 'isListView:', this.isListView);
+	    this.debug('Processing footnotes for content of length:', content.length, 'isListView:', this.isListView);
 
-		const currentStates = new Map < string,
-			boolean > ();
-		this.renderedGroups.forEach(rendered => {
-			if (rendered.group.header) {
-				const key = `${rendered.group.header.level}-${rendered.group.header.text}`;
-				currentStates.set(key, !rendered.group.isCollapsed);
-			}
-		});
+	    const currentStates = new Map<string, boolean>();
+	    this.renderedGroups.forEach(rendered => {
+	        if (rendered.group.header) {
+	            const key = `${rendered.group.header.level}-${rendered.group.header.text}`;
+	            currentStates.set(key, !rendered.group.isCollapsed);
+	        }
+	    });
 
-		this.renderedGroups = [];
+	    this.renderedGroups = [];
 
-		// NEW: Get both referenced and unreferenced footnotes
-		const { referencedFootnotes, unreferencedFootnotes } = this.plugin.extractFootnotesWithUnreferenced(content);
-		const allFootnotes = [...referencedFootnotes, ...unreferencedFootnotes];
+	    const footnotes = this.plugin.extractFootnotes(content);
 
-		this.debug('Found', referencedFootnotes.length, 'referenced footnotes and', unreferencedFootnotes.length, 'unreferenced footnotes');
+	    this.debug('Found', footnotes.length, 'footnotes');
 
-		if (allFootnotes.length === 0) {
-			container.createEl('div', {
-				text: 'No footnotes found',
-				cls: 'footnotes-empty'
-			});
+	    if (footnotes.length === 0) {
+	        container.createEl('div', {
+	            text: 'No footnotes found',
+	            cls: 'footnotes-empty'
+	        });
 
-			this.disableControls(toggleBtn, navBtn, returnBtn, renumberBtn, searchInput, listViewBtn);
-			return;
-		}
+	        this.disableControls(toggleBtn, navBtn, returnBtn, renumberBtn, searchInput, listViewBtn);
+	        return;
+	    }
 
-		// Enable controls when we have footnotes
-		if (toggleBtn) toggleBtn.disabled = false;
-		if (searchInput) searchInput.disabled = false;
-		if (navBtn) navBtn.disabled = false;
-		if (returnBtn) returnBtn.disabled = false;
-		if (renumberBtn) renumberBtn.disabled = false;
-		if (listViewBtn) listViewBtn.disabled = false;
+	    // Enable controls when we have footnotes
+	    if (toggleBtn) toggleBtn.disabled = false;
+	    if (searchInput) searchInput.disabled = false;
+	    if (navBtn) navBtn.disabled = false;
+	    if (returnBtn) returnBtn.disabled = false;
+	    if (renumberBtn) renumberBtn.disabled = false;
+	    if (listViewBtn) listViewBtn.disabled = false;
 
-		const footnotesList = container.createEl('div', {
-			cls: 'footnotes-list'
-		});
+	    const footnotesList = container.createEl('div', {
+	        cls: 'footnotes-list'
+	    });
 
-		if (this.isListView) {
-			this.debug('Rendering in list view mode');
-			this.renderListView(allFootnotes, footnotesList);
-		} else {
-			this.debug('Rendering in outline view mode');
-			const headers = this.plugin.extractHeaders(content);
-			const footnoteGroups = this.plugin.groupFootnotesByHeaders(referencedFootnotes, headers);
+	    // MOVED: Set up search functionality for BOTH view modes
+	    if (searchInput && clearSearchBtn) {
+	        let searchTimeout: number | null = null;
+	        let currentSearchTerm = '';
 
-			// NEW: Add unreferenced group if there are unreferenced footnotes
-			if (unreferencedFootnotes.length > 0) {
-				const unreferencedGroup: FootnoteGroup = {
-					header: { text: 'Unreferenced', level: 1, line: -1 },
-					footnotes: unreferencedFootnotes,
-					isUnreferencedGroup: true
-				};
-				footnoteGroups.push(unreferencedGroup);
-			}
+	        const performSearch = () => {
+	            const searchTerm = searchInput.value.toLowerCase().trim();
+	            currentSearchTerm = searchTerm;
+            
+	            // Clear current content
+	            footnotesList.empty();
+            
+	            if (this.isListView) {
+	                // Filter and render list view
+	                this.filterAndRenderListView(footnotes, footnotesList, searchTerm);
+	            } else {
+	                // Filter and render outline view (existing functionality)
+	                const headers = this.plugin.extractHeaders(content);
+	                const footnoteGroups = this.plugin.groupFootnotesByHeaders(footnotes, headers);
+	                this.filterFootnotes(footnotesList, footnoteGroups, searchTerm);
+	            }
 
-			this.debug('Found', footnoteGroups.length, 'groups');
+	            if (searchTerm) {
+	                clearSearchBtn.style.display = 'block';
+	            } else {
+	                clearSearchBtn.style.display = 'none';
+	            }
+	        };
 
-			const allGroups: FootnoteGroup[] = [];
-			const collectAllGroups = (groups: FootnoteGroup[]) => {
-				groups.forEach(group => {
-					allGroups.push(group);
-					if (group.children) {
-						collectAllGroups(group.children);
-					}
-				});
-			};
-			collectAllGroups(footnoteGroups);
+	        (this as any).currentSearchTerm = '';
 
-			if (toggleBtn && toggleIcon) {
-				toggleBtn.onclick = (e) => {
-					this.debug('Toggle button clicked, current state:', this.isCollapsed);
-					e.preventDefault();
-					e.stopPropagation();
-					this.toggleAllGroups(toggleBtn);
-				};
+	        searchInput.addEventListener('input', () => {
+	            this.debug('Search input changed:', searchInput.value);
+	            if (searchTimeout) {
+	                window.clearTimeout(searchTimeout);
+	            }
+	            searchTimeout = window.setTimeout(() => {
+	                (this as any).currentSearchTerm = searchInput.value.toLowerCase().trim();
+	                performSearch();
+	            }, 300);
+	        });
 
-				this.updateToggleButton(toggleBtn);
-			}
+	        clearSearchBtn.addEventListener('click', () => {
+	            this.debug('Clear search clicked');
+	            searchInput.value = '';
+	            (this as any).currentSearchTerm = '';
+	            performSearch();
+	            searchInput.focus();
+	        });
 
-			if (searchInput && clearSearchBtn) {
-				let searchTimeout: number | null = null;
-				let currentSearchTerm = '';
+	        clearSearchBtn.style.display = 'none';
+	    }
 
-				const performSearch = () => {
-					const searchTerm = searchInput.value.toLowerCase().trim();
-					currentSearchTerm = searchTerm;
-					this.filterFootnotes(footnotesList, footnoteGroups, searchTerm);
+	    // Render initial view based on mode
+	    if (this.isListView) {
+	        this.debug('Rendering in list view mode');
+	        this.renderListView(footnotes, footnotesList);
+	    } else {
+	        this.debug('Rendering in outline view mode');
+	        // Process headers and create groups for outline view
+	        const headers = this.plugin.extractHeaders(content);
+	        const footnoteGroups = this.plugin.groupFootnotesByHeaders(footnotes, headers);
 
-					if (searchTerm) {
-						clearSearchBtn.style.display = 'block';
-					} else {
-						clearSearchBtn.style.display = 'none';
-					}
-				};
+	        this.debug('Found', footnoteGroups.length, 'groups');
 
-				(this as any).currentSearchTerm = '';
+	        const allGroups: FootnoteGroup[] = [];
+	        const collectAllGroups = (groups: FootnoteGroup[]) => {
+	            groups.forEach(group => {
+	                allGroups.push(group);
+	                if (group.children) {
+	                    collectAllGroups(group.children);
+	                }
+	            });
+	        };
+	        collectAllGroups(footnoteGroups);
 
-				searchInput.addEventListener('input', () => {
-					if (searchTimeout) {
-						window.clearTimeout(searchTimeout);
-					}
-					searchTimeout = window.setTimeout(() => {
-						(this as any).currentSearchTerm = searchInput.value.toLowerCase().trim();
-						performSearch();
-					}, 300);
-				});
+	        if (toggleBtn && toggleIcon) {
+	            toggleBtn.onclick = (e) => {
+	                this.debug('Toggle button clicked, current state:', this.isCollapsed);
+	                e.preventDefault();
+	                e.stopPropagation();
+	                this.toggleAllGroups(toggleBtn);
+	            };
 
-				clearSearchBtn.addEventListener('click', () => {
-					searchInput.value = '';
-					(this as any).currentSearchTerm = '';
-					performSearch();
-					searchInput.focus();
-				});
+	            this.updateToggleButton(toggleBtn);
+	        }
 
-				clearSearchBtn.style.display = 'none';
-			}
+	        footnoteGroups.forEach(group => {
+	            if (this.isCollapsed && !this.hasManualExpansions) {
+	                this.setGroupCollapsedRecursively(group, true);
+	            }
+	            this.renderFootnoteGroup(group, footnotesList, 0);
+	        });
 
-			footnoteGroups.forEach(group => {
-				if (this.isCollapsed && !this.hasManualExpansions) {
-					this.setGroupCollapsedRecursively(group, true);
-				}
-				this.renderFootnoteGroup(group, footnotesList, 0);
-			});
+	        if (this.hasManualExpansions && currentStates.size > 0) {
+	            this.restoreExpansionStates(footnoteGroups, currentStates);
+	        }
+	    }
 
-			if (this.hasManualExpansions && currentStates.size > 0) {
-				this.restoreExpansionStates(footnoteGroups, currentStates);
-			}
-		}
-
-		this.debug('Rendered groups count:', this.renderedGroups.length);
-		this.debug('Initial collapsed state:', this.isCollapsed, 'hasManualExpansions:', this.hasManualExpansions);
+	    this.debug('Rendered groups count:', this.renderedGroups.length);
+	    this.debug('Initial collapsed state:', this.isCollapsed, 'hasManualExpansions:', this.hasManualExpansions);
 	}
 
 	private restoreExpansionStates(groups: FootnoteGroup[], states: Map < string, boolean > ) {
@@ -1695,6 +1699,114 @@ class FootnotesView extends ItemView {
 	    textNodes.forEach(textNode => {
 	        const text = textNode.textContent || '';
 	        if (text.toLowerCase().includes(searchTerm.toLowerCase())) {
+	            const highlightedHTML = this.highlightSearchText(text, searchTerm);
+	            const span = document.createElement('span');
+	            span.innerHTML = highlightedHTML;
+	            textNode.replaceWith(span);
+	        }
+	    });
+	}
+	
+	// ADD: New method to filter and render list view with search
+	private filterAndRenderListView(footnotes: FootnoteData[], container: Element, searchTerm: string) {
+	    this.debug('Filtering list view with search term:', searchTerm);
+
+	    let filteredFootnotes = footnotes;
+    
+	    if (searchTerm) {
+	        filteredFootnotes = footnotes.filter(footnote =>
+	            footnote.content.toLowerCase().includes(searchTerm) ||
+	            footnote.number.toLowerCase().includes(searchTerm)
+	        );
+        
+	        this.debug('Filtered to', filteredFootnotes.length, 'footnotes');
+	    }
+
+	    if (filteredFootnotes.length === 0 && searchTerm) {
+	        container.createEl('div', {
+	            text: 'No matching footnotes found',
+	            cls: 'footnotes-empty'
+	        });
+	        return;
+	    }
+
+	    // Sort footnotes by their first reference position (document order)
+	    const sortedFootnotes = [...filteredFootnotes].sort((a, b) => {
+	        const aFirstRef = a.references[0];
+	        const bFirstRef = b.references[0];
+	        if (!aFirstRef || !bFirstRef) return 0;
+	        return aFirstRef.startPos - bFirstRef.startPos;
+	    });
+
+	    // Create list items with search highlighting
+	    sortedFootnotes.forEach((footnote, index) => {
+	        const footnoteContainer = container.createEl('div', {
+	            cls: 'footnote-list-item'
+	        });
+
+	        // Add sequence number for list view
+	        const sequenceEl = footnoteContainer.createEl('div', {
+	            cls: 'footnote-sequence',
+	            text: `${index + 1}.`
+	        });
+
+	        // Create the footnote element with search highlighting
+	        this.createFootnoteElementWithSearch(footnote, footnoteContainer, searchTerm);
+	    });
+
+	    this.debug('List view rendered with search successfully');
+	}
+
+	// ADD: New method to create footnote element with search highlighting
+	private createFootnoteElementWithSearch(footnote: FootnoteData, container: Element, searchTerm: string) {
+	    // Store the search term for highlighting
+	    (this as any).currentSearchTerm = searchTerm;
+    
+	    // Use existing createFootnoteElement method
+	    this.createFootnoteElement(footnote, container);
+    
+	    // Apply search highlighting if there's a search term
+	    if (searchTerm) {
+	        const footnoteEl = container.querySelector('.footnote-item');
+	        if (footnoteEl) {
+	            this.highlightSearchInFootnoteElement(footnoteEl as HTMLElement, searchTerm);
+	        }
+	    }
+	}
+
+	// ADD: New method to highlight search terms in footnote elements
+	private highlightSearchInFootnoteElement(element: HTMLElement, searchTerm: string) {
+	    if (!searchTerm) return;
+    
+	    // Find text nodes and apply highlighting
+	    const walker = document.createTreeWalker(
+	        element,
+	        NodeFilter.SHOW_TEXT,
+	        {
+	            acceptNode: (node) => {
+	                // Skip if parent is a script or style element
+	                const parent = node.parentElement;
+	                if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+	                    return NodeFilter.FILTER_REJECT;
+	                }
+	                return NodeFilter.FILTER_ACCEPT;
+	            }
+	        }
+	    );
+    
+	    const textNodes: Text[] = [];
+	    let node;
+    
+	    while (node = walker.nextNode()) {
+	        textNodes.push(node as Text);
+	    }
+    
+	    textNodes.forEach(textNode => {
+	        const text = textNode.textContent || '';
+	        const lowerText = text.toLowerCase();
+	        const lowerSearchTerm = searchTerm.toLowerCase();
+        
+	        if (lowerText.includes(lowerSearchTerm)) {
 	            const highlightedHTML = this.highlightSearchText(text, searchTerm);
 	            const span = document.createElement('span');
 	            span.innerHTML = highlightedHTML;
