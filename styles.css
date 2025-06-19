@@ -1,1207 +1,5 @@
 /*
-Footnotes Manager - Enhanced with 4K optimization and automatic scaling
-*/
-
-/* 4K OPTIMIZATION: CSS Custom Properties for Dynamic Scaling */
-:root {
-  /* Base scaling that respects Obsidian's font settings */
-  --footnotes-scale-factor: clamp(1, 1 + (100vw - 1920px) / 3840, 1.5);
-  --footnotes-base-spacing: clamp(4px, 0.25vw + 2px, 12px);
-  --footnotes-adaptive-padding: clamp(8px, 0.5vw + 4px, 20px);
-  --footnotes-button-scale: clamp(28px, 1.8vw + 16px, 48px);
-  --footnotes-icon-scale: clamp(14px, 0.8vw + 8px, 24px);
-  --footnotes-border-scale: clamp(1px, 0.05vw + 1px, 2px);
-  
-  /* Text clarity optimizations for high-DPI */
-  --footnotes-text-rendering: optimizeLegibility;
-  --footnotes-font-smoothing: antialiased;
-}
-
-/* 4K OPTIMIZATION: Automatic font size inheritance from Obsidian */
-.footnotes-list {
-  font-size: inherit; /* Inherits from Obsidian's base font size */
-  font-family: inherit; /* Inherits from Obsidian's font family */
-  line-height: 1.6; /* Optimized for readability */
-  text-rendering: var(--footnotes-text-rendering);
-  -webkit-font-smoothing: var(--footnotes-font-smoothing);
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Panel Styles with 4K Optimization */
-.footnotes-header {
-	position: sticky;
-	top: 0;
-	z-index: 10;
-	background-color: var(--background-primary);
-	border-bottom: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	padding: var(--footnotes-adaptive-padding);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.footnotes-title {
-	margin: 0;
-	color: var(--text-normal);
-	font-size: calc(1em * var(--footnotes-scale-factor) * 1.1);
-	font-weight: 600;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnotes-empty {
-	padding: calc(var(--footnotes-adaptive-padding) * 2);
-	text-align: center;
-	color: var(--text-muted);
-	font-style: italic;
-	font-size: calc(1em * var(--footnotes-scale-factor));
-}
-
-.footnotes-list {
-	padding: var(--footnotes-base-spacing);
-	margin-top: 0;
-}
-
-/* Header Section Styles with Adaptive Scaling */
-.footnote-header-section {
-	margin-bottom: var(--footnotes-base-spacing);
-}
-
-.footnote-header {
-	display: flex;
-	align-items: center;
-	padding: calc(var(--footnotes-base-spacing) * 1.5) var(--footnotes-adaptive-padding);
-	background-color: var(--background-secondary);
-	border-radius: calc(var(--footnotes-base-spacing) / 2);
-	margin-bottom: calc(var(--footnotes-base-spacing) * 0.75);
-	font-weight: 500;
-	color: var(--text-normal);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	transition: background-color 0.1s ease;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-header:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-/* NEW: Special styling for unreferenced header with 4K scaling */
-.footnote-unreferenced-header {
-	background-color: var(--background-secondary);
-	border-left: calc(var(--footnotes-base-spacing) * 0.75) solid var(--text-error);
-	font-weight: 600;
-}
-
-.footnote-unreferenced-header:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-.footnote-unreferenced-header .footnote-header-text {
-	color: var(--text-error);
-}
-
-.footnote-collapse-icon {
-	margin-right: calc(var(--footnotes-base-spacing) * 1.5);
-	cursor: pointer;
-	user-select: none;
-	color: var(--text-muted);
-	min-width: calc(var(--footnotes-icon-scale) * 0.85);
-	transition: color 0.1s ease;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.footnote-collapse-icon:hover {
-	color: var(--text-normal);
-}
-
-.footnote-collapse-icon svg {
-	transition: transform 0.1s ease;
-	width: calc(var(--footnotes-icon-scale) * 0.85);
-	height: calc(var(--footnotes-icon-scale) * 0.85);
-}
-
-.footnote-collapse-icon:hover svg {
-	transform: scale(1.1);
-}
-
-.footnote-header-text {
-	flex: 1;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.footnote-group-content {
-	transition: all 0.2s ease;
-}
-
-.footnote-group-footnotes {
-	margin-left: calc(var(--footnotes-adaptive-padding) * 1.2);
-	border-left: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	padding-left: var(--footnotes-adaptive-padding);
-	margin-top: calc(var(--footnotes-base-spacing) * 1.5);
-}
-
-/* Individual Footnote Styles with 4K Optimization */
-.footnote-item {
-	padding: var(--footnotes-adaptive-padding);
-	margin: calc(var(--footnotes-base-spacing) * 1.5) 0;
-	border-radius: calc(var(--footnotes-base-spacing) * 1.5);
-	cursor: pointer;
-	border: var(--footnotes-border-scale) solid transparent;
-	transition: all 0.1s ease;
-	position: relative;
-	background-color: var(--background-primary);
-}
-
-.footnote-item:hover:not(.footnote-editing),
-.footnote-item-hover {
-	background-color: var(--background-modifier-hover);
-	border-color: var(--background-modifier-border);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.footnote-item.footnote-editing {
-	background-color: var(--background-modifier-form-field);
-	border-color: var(--interactive-accent);
-	cursor: default;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* NEW: Special styling for unreferenced footnotes with 4K scaling */
-.footnote-item.footnote-unreferenced {
-	border-left: calc(var(--footnotes-base-spacing) * 0.75) solid var(--text-error);
-	background-color: var(--background-primary);
-}
-
-.footnote-item.footnote-unreferenced:hover:not(.footnote-editing) {
-	background-color: var(--background-modifier-hover);
-	border-left-color: var(--text-error);
-}
-
-/* Footnote Header Info with 4K Adaptive Scaling */
-.footnote-header-info {
-	display: flex;
-	align-items: center;
-	gap: calc(var(--footnotes-base-spacing) * 2);
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-}
-
-.footnote-number-container {
-	display: flex;
-	align-items: center;
-	gap: var(--footnotes-base-spacing);
-}
-
-.footnote-number {
-	font-weight: 600;
-	color: var(--interactive-accent);
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-	background-color: var(--background-secondary);
-	padding: calc(var(--footnotes-base-spacing) * 0.75) calc(var(--footnotes-base-spacing) * 2);
-	border-radius: calc(var(--footnotes-base-spacing) * 0.75);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-/* NEW: Multi-section footnote icon with 4K scaling */
-.footnote-multi-section-icon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: var(--text-muted);
-	transition: all 0.1s ease;
-}
-
-.footnote-multi-section-icon svg {
-	width: calc(var(--footnotes-icon-scale) * 0.7);
-	height: calc(var(--footnotes-icon-scale) * 0.7);
-}
-
-.footnote-multi-section-icon:hover {
-	color: var(--interactive-accent);
-	transform: scale(1.1);
-}
-
-.footnote-item:hover .footnote-multi-section-icon {
-	color: var(--interactive-accent);
-}
-
-/* NEW: Unreferenced footnote number styling with 4K scaling */
-.footnote-unreferenced .footnote-number {
-	color: var(--text-error);
-	background-color: var(--background-secondary);
-	border-color: var(--background-modifier-border);
-}
-
-.footnote-ref-count {
-	color: var(--text-muted);
-	font-size: calc(0.75em * var(--footnotes-scale-factor));
-	background-color: var(--background-secondary);
-	padding: calc(var(--footnotes-base-spacing) * 0.5) calc(var(--footnotes-base-spacing) * 1.5);
-	border-radius: calc(var(--footnotes-base-spacing) * 0.5);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-/* NEW: Unreferenced indicator styling with 4K scaling */
-.footnote-unreferenced-indicator {
-	color: var(--text-error);
-	font-size: calc(0.75em * var(--footnotes-scale-factor));
-	background-color: var(--background-secondary);
-	padding: calc(var(--footnotes-base-spacing) * 0.5) calc(var(--footnotes-base-spacing) * 1.5);
-	border-radius: calc(var(--footnotes-base-spacing) * 0.5);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-content {
-	line-height: 1.6;
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-}
-
-.footnote-text {
-	color: var(--text-normal);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	line-height: 1.6;
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-	word-wrap: break-word;
-	border-radius: calc(var(--footnotes-base-spacing) * 0.75);
-	padding: calc(var(--footnotes-base-spacing) * 1.5) calc(var(--footnotes-base-spacing) * 2);
-	min-height: calc(var(--footnotes-adaptive-padding) * 1.2);
-	white-space: pre-wrap;
-	background-color: var(--background-secondary);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	text-rendering: var(--footnotes-text-rendering);
-	-webkit-font-smoothing: var(--footnotes-font-smoothing);
-}
-
-/* Display vs Edit states for footnote content with 4K optimization */
-.footnote-display {
-	cursor: pointer;
-	transition: background-color 0.1s ease;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-display:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-/* NEW: Non-editable display for unreferenced footnotes */
-.footnote-unreferenced .footnote-display {
-	cursor: default;
-}
-
-.footnote-unreferenced .footnote-display:hover {
-	background-color: var(--background-secondary);
-}
-
-.footnote-edit {
-	display: none;
-}
-
-.footnote-editing .footnote-display {
-	display: none;
-}
-
-.footnote-editing .footnote-edit {
-	display: block;
-}
-
-.footnote-text[contenteditable="true"]:focus {
-	outline: var(--footnotes-border-scale) solid var(--interactive-accent);
-	background-color: var(--background-primary);
-}
-
-.footnote-textarea {
-	width: 100%;
-	min-height: calc(var(--footnotes-adaptive-padding) * 3.5);
-	resize: vertical;
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	border-radius: calc(var(--footnotes-base-spacing) * 0.75);
-	padding: calc(var(--footnotes-base-spacing) * 2) calc(var(--footnotes-adaptive-padding) * 1.25);
-	font-family: inherit;
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	line-height: 1.6;
-	color: var(--text-normal);
-	background-color: var(--background-primary);
-	transition: border-color 0.1s ease;
-	box-sizing: border-box;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-textarea:focus {
-	outline: none;
-	border-color: var(--interactive-accent);
-	background-color: var(--background-primary);
-}
-
-.footnote-editing .footnote-textarea {
-	border-color: var(--interactive-accent);
-	background-color: var(--background-modifier-form-field);
-}
-
-/* References Section with 4K Scaling */
-.footnote-references {
-	margin: calc(var(--footnotes-base-spacing) * 2) 0;
-	padding: calc(var(--footnotes-base-spacing) * 1.5) calc(var(--footnotes-base-spacing) * 2);
-	background-color: var(--background-secondary);
-	border-radius: var(--footnotes-base-spacing);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-}
-
-.footnote-references-label {
-	display: block;
-	font-size: calc(0.7em * var(--footnotes-scale-factor));
-	color: var(--text-muted);
-	margin-bottom: var(--footnotes-base-spacing);
-	font-weight: 500;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-reference-btn {
-	margin: calc(var(--footnotes-base-spacing) * 0.75) calc(var(--footnotes-base-spacing) * 1.5) calc(var(--footnotes-base-spacing) * 0.75) 0;
-	padding: var(--footnotes-base-spacing) calc(var(--footnotes-base-spacing) * 2);
-	font-size: calc(0.75em * var(--footnotes-scale-factor));
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border: none;
-	border-radius: calc(var(--footnotes-base-spacing) * 0.75);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-reference-btn:hover {
-	background-color: var(--interactive-accent-hover);
-	transform: translateY(-1px);
-}
-
-.footnote-reference-btn:active {
-	transform: translateY(0);
-}
-
-.footnote-actions {
-	display: flex;
-	gap: calc(var(--footnotes-base-spacing) * 1.5);
-	justify-content: flex-end;
-	margin-top: calc(var(--footnotes-base-spacing) * 2);
-	flex-wrap: wrap;
-}
-
-.footnote-btn {
-	padding: var(--footnotes-base-spacing) calc(var(--footnotes-adaptive-padding) * 1.25);
-	font-size: calc(0.75em * var(--footnotes-scale-factor));
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	border-radius: var(--footnotes-base-spacing);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	display: flex;
-	align-items: center;
-	gap: var(--footnotes-base-spacing);
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-save-btn {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-}
-
-.footnote-save-btn:hover {
-	background-color: var(--interactive-accent-hover);
-}
-
-.footnote-cancel-btn {
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-}
-
-.footnote-cancel-btn:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-.footnote-delete-btn {
-	background-color: var(--background-secondary);
-	color: var(--text-error);
-	border-color: var(--background-modifier-border);
-	width: calc(var(--footnotes-button-scale) * 0.9);
-	height: calc(var(--footnotes-button-scale) * 0.9);
-	padding: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.footnote-delete-btn:hover {
-	background-color: var(--background-modifier-error);
-	border-color: var(--text-error);
-	transform: translateY(-1px);
-}
-
-.footnote-delete-btn:active {
-	transform: translateY(0);
-}
-
-.footnote-delete-btn svg {
-	transition: all 0.1s ease;
-	width: calc(var(--footnotes-icon-scale) * 0.85);
-	height: calc(var(--footnotes-icon-scale) * 0.85);
-}
-
-.footnote-delete-btn:hover svg {
-	color: var(--text-error);
-	transform: scale(1.1);
-}
-
-/* Title Row and Controls with 4K Adaptive Scaling */
-.footnotes-title-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-	min-height: calc(var(--footnotes-button-scale) * 1.1);
-}
-
-.footnotes-title {
-	flex: 1;
-	text-align: left;
-}
-
-.footnotes-controls {
-	display: flex;
-	gap: var(--footnotes-base-spacing);
-	align-items: center;
-	flex-shrink: 0;
-	min-width: calc(var(--footnotes-button-scale) * 5);
-	justify-content: flex-end;
-}
-
-/* Navigation and Control Button Styles with 4K Optimization */
-.footnotes-control-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: var(--footnotes-button-scale);
-	height: calc(var(--footnotes-button-scale) * 0.9);
-	padding: 0;
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: var(--footnotes-base-spacing);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	min-width: var(--footnotes-button-scale);
-	min-height: calc(var(--footnotes-button-scale) * 0.9);
-	flex-shrink: 0;
-}
-
-.footnotes-control-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.footnotes-control-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-control-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-	animation: buttonPress 0.1s ease-in-out;
-}
-
-.footnotes-control-btn svg {
-	transition: all 0.1s ease;
-	width: var(--footnotes-icon-scale);
-	height: var(--footnotes-icon-scale);
-}
-
-.footnotes-control-btn:hover svg {
-	transform: scale(1.05);
-}
-
-/* Specific button styles */
-.nav-btn svg {
-	color: var(--color-accent);
-}
-
-.nav-btn:hover svg {
-	color: var(--color-accent);
-}
-
-.return-btn svg {
-	color: var(--color-green);
-}
-
-.return-btn:hover svg {
-	color: var(--color-green);
-}
-
-.renumber-btn svg {
-	color: var(--color-orange);
-}
-
-.renumber-btn:hover svg {
-	color: var(--color-orange);
-}
-
-.list-view-btn svg {
-	color: var(--color-blue);
-}
-
-.list-view-btn:hover svg {
-	color: var(--color-blue);
-	transform: scale(1.05);
-}
-
-/* Toggle Button Styles with 4K Scaling */
-.footnotes-toggle-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: var(--footnotes-button-scale);
-	height: calc(var(--footnotes-button-scale) * 0.9);
-	padding: 0;
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: var(--footnotes-base-spacing);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	margin-left: var(--footnotes-base-spacing);
-	min-width: var(--footnotes-button-scale);
-	min-height: calc(var(--footnotes-button-scale) * 0.9);
-	flex-shrink: 0;
-}
-
-.footnotes-toggle-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.footnotes-toggle-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-toggle-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-	animation: buttonPress 0.1s ease-in-out;
-}
-
-.footnotes-toggle-btn svg {
-	transition: all 0.1s ease;
-	width: var(--footnotes-icon-scale);
-	height: var(--footnotes-icon-scale);
-}
-
-.footnotes-toggle-btn:hover svg {
-	color: var(--interactive-accent);
-	transform: scale(1.05);
-}
-
-/* Search functionality styles with 4K optimization */
-.footnotes-search-container {
-	position: relative;
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-}
-
-.footnotes-search-input {
-	width: 100%;
-	padding: calc(var(--footnotes-base-spacing) * 2) calc(var(--footnotes-button-scale) * 0.8) calc(var(--footnotes-base-spacing) * 2) calc(var(--footnotes-adaptive-padding) * 1.25);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	background: var(--background-primary);
-	color: var(--text-normal);
-	border-radius: var(--footnotes-base-spacing);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	transition: border-color 0.1s ease;
-	font-family: inherit;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnotes-search-input:focus {
-	outline: calc(var(--footnotes-border-scale) * 2) solid var(--interactive-accent);
-	outline-offset: calc(var(--footnotes-border-scale) * 2);
-	border-color: var(--interactive-accent);
-}
-
-.footnotes-search-input:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-search-input::placeholder {
-	color: var(--text-muted);
-}
-
-.footnotes-clear-search {
-	position: absolute;
-	right: var(--footnotes-base-spacing);
-	top: 50%;
-	transform: translateY(-50%);
-	width: calc(var(--footnotes-button-scale) * 0.6);
-	height: calc(var(--footnotes-button-scale) * 0.6);
-	border: none;
-	background: none;
-	color: var(--text-muted);
-	cursor: pointer;
-	border-radius: calc(var(--footnotes-base-spacing) * 0.5);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.1s ease;
-}
-
-.footnotes-clear-search:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.footnotes-clear-search svg {
-	width: calc(var(--footnotes-icon-scale) * 0.85);
-	height: calc(var(--footnotes-icon-scale) * 0.85);
-	transition: all 0.1s ease;
-}
-
-.footnotes-clear-search:hover svg {
-	transform: scale(1.1);
-}
-
-/* Search highlighting styles */
-.search-highlight {
-	background-color: var(--text-highlight-bg);
-	color: var(--text-on-accent);
-	padding: 1px 2px;
-	border-radius: 2px;
-	font-weight: 500;
-}
-
-/* NEW: Enhanced Renumber Modal Styles with 4K optimization */
-.renumber-description-container {
-	margin-bottom: calc(var(--footnotes-adaptive-padding) * 1.33);
-}
-
-.renumber-section {
-	margin-bottom: calc(var(--footnotes-adaptive-padding) * 1.5);
-	padding: calc(var(--footnotes-adaptive-padding) * 1.5);
-	background-color: var(--background-secondary);
-	border-radius: calc(var(--footnotes-base-spacing) * 1.5);
-	border-left: calc(var(--footnotes-base-spacing) * 1) solid var(--interactive-accent);
-}
-
-.renumber-section h3 {
-	margin: 0 0 calc(var(--footnotes-base-spacing) * 2) 0;
-	color: var(--text-normal);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	font-weight: 600;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-section p {
-	margin: 0;
-	color: var(--text-normal);
-	line-height: 1.6;
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-no-issues {
-	padding: calc(var(--footnotes-adaptive-padding) * 1.5);
-	background-color: var(--background-secondary);
-	border-radius: calc(var(--footnotes-base-spacing) * 1.5);
-	border-left: calc(var(--footnotes-base-spacing) * 1) solid var(--color-green);
-	color: var(--text-normal);
-	margin: 0;
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-options {
-	margin-bottom: calc(var(--footnotes-adaptive-padding) * 1.33);
-	padding: calc(var(--footnotes-adaptive-padding) * 1.5);
-	background-color: var(--background-secondary);
-	border-radius: calc(var(--footnotes-base-spacing) * 1.5);
-	border-left: calc(var(--footnotes-base-spacing) * 1) solid var(--color-blue);
-}
-
-.renumber-options h3 {
-	margin: 0 0 calc(var(--footnotes-adaptive-padding) * 1.5) 0;
-	color: var(--text-normal);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	font-weight: 600;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-option {
-	display: flex;
-	align-items: center;
-	gap: calc(var(--footnotes-base-spacing) * 2);
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-	padding: calc(var(--footnotes-base-spacing) * 2);
-	background-color: var(--background-primary);
-	border-radius: var(--footnotes-base-spacing);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	transition: all 0.1s ease;
-}
-
-.renumber-option:hover {
-	background-color: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-}
-
-.renumber-option input[type="checkbox"] {
-	margin: 0;
-	accent-color: var(--interactive-accent);
-	transform: scale(var(--footnotes-scale-factor));
-}
-
-.renumber-option label {
-	margin: 0;
-	color: var(--text-normal);
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-	cursor: pointer;
-	flex: 1;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-warning {
-	margin-bottom: calc(var(--footnotes-adaptive-padding) * 2.5);
-	padding: calc(var(--footnotes-adaptive-padding) * 1.5);
-	background-color: var(--background-secondary);
-	border-radius: var(--footnotes-base-spacing);
-	border-left: calc(var(--footnotes-base-spacing) * 1) solid var(--color-orange);
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-	line-height: 1.6;
-	color: var(--text-normal);
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-buttons {
-	display: flex;
-	gap: calc(var(--footnotes-base-spacing) * 2);
-	justify-content: flex-end;
-	padding-top: calc(var(--footnotes-adaptive-padding) * 2);
-	border-top: var(--footnotes-border-scale) solid var(--background-modifier-border);
-}
-
-.renumber-buttons button {
-	padding: calc(var(--footnotes-base-spacing) * 2) calc(var(--footnotes-adaptive-padding) * 2);
-	border-radius: var(--footnotes-base-spacing);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.renumber-buttons button.mod-cta {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
-}
-
-.renumber-buttons button.mod-cta:hover:not(:disabled) {
-	background-color: var(--interactive-accent-hover);
-}
-
-.renumber-buttons button.mod-cta:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.renumber-buttons button:not(.mod-cta) {
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-}
-
-.renumber-buttons button:not(.mod-cta):hover {
-	background-color: var(--background-modifier-hover);
-}
-
-/* Settings Instructions Styles with 4K scaling */
-.footnotes-instructions {
-	margin-top: calc(var(--footnotes-adaptive-padding) * 3);
-	padding: calc(var(--footnotes-adaptive-padding) * 2);
-	background-color: var(--background-secondary);
-	border-radius: calc(var(--footnotes-base-spacing) * 1.5);
-	border-left: calc(var(--footnotes-base-spacing) * 1) solid var(--color-green);
-}
-
-.footnotes-instructions h3 {
-	margin: 0 0 calc(var(--footnotes-adaptive-padding) * 1.5) 0;
-	color: var(--text-normal);
-	font-size: calc(1em * var(--footnotes-scale-factor));
-	font-weight: 600;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnotes-instructions ol {
-	margin: 0;
-	padding-left: calc(var(--footnotes-adaptive-padding) * 2.5);
-	color: var(--text-normal);
-}
-
-.footnotes-instructions li {
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-	line-height: 1.6;
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-/* List View Styles with 4K optimization */
-.footnote-list-item {
-	display: flex;
-	align-items: flex-start;
-	margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-	padding: calc(var(--footnotes-base-spacing) * 2);
-	border-radius: var(--footnotes-base-spacing);
-	background-color: var(--background-secondary);
-	border: var(--footnotes-border-scale) solid var(--background-modifier-border);
-}
-
-.footnote-sequence {
-	font-weight: 600;
-	color: var(--text-muted);
-	font-size: calc(0.9em * var(--footnotes-scale-factor));
-	margin-right: calc(var(--footnotes-adaptive-padding) * 1.5);
-	margin-top: calc(var(--footnotes-adaptive-padding) * 1.5);
-	min-width: calc(var(--footnotes-adaptive-padding) * 3);
-	flex-shrink: 0;
-	text-rendering: var(--footnotes-text-rendering);
-}
-
-.footnote-list-item .footnote-item {
-	flex: 1;
-	margin: 0;
-	background-color: transparent;
-	border: none;
-	padding: 0;
-}
-
-.footnote-list-item .footnote-item:hover {
-	background-color: var(--background-modifier-hover);
-	border-radius: var(--footnotes-base-spacing);
-}
-
-.footnote-list-item:nth-child(even) {
-	background-color: var(--background-primary);
-}
-
-.footnote-list-item:nth-child(odd) {
-	background-color: var(--background-secondary);
-}
-
-/* Styling for rendered markdown in footnotes with 4K optimization */
-.footnote-display em {
-	font-style: italic;
-}
-
-.footnote-display strong {
-	font-weight: bold;
-}
-
-.footnote-display code {
-	background-color: var(--code-background);
-	color: var(--code-normal);
-	padding: calc(var(--footnotes-base-spacing) * 0.5) var(--footnotes-base-spacing);
-	border-radius: calc(var(--footnotes-base-spacing) * 0.75);
-	font-family: var(--font-monospace);
-	font-size: calc(0.85em * var(--footnotes-scale-factor));
-}
-
-.footnote-display a {
-	color: var(--link-color);
-	text-decoration: none;
-}
-
-.footnote-display a:hover {
-	text-decoration: underline;
-}
-
-.footnote-display blockquote {
-	border-left: calc(var(--footnotes-base-spacing) * 0.75) solid var(--quote-opening-modifier);
-	padding-left: calc(var(--footnotes-adaptive-padding) * 1.5);
-	margin: calc(var(--footnotes-base-spacing) * 2) 0;
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-.footnote-display ul, .footnote-display ol {
-	margin: var(--footnotes-base-spacing) 0;
-	padding-left: calc(var(--footnotes-adaptive-padding) * 2.5);
-}
-
-.footnote-display li {
-	margin: calc(var(--footnotes-base-spacing) * 0.5) 0;
-}
-
-.footnote-display h1, .footnote-display h2, .footnote-display h3, 
-.footnote-display h4, .footnote-display h5, .footnote-display h6 {
-	margin: calc(var(--footnotes-base-spacing) * 2) 0 var(--footnotes-base-spacing) 0;
-	font-weight: bold;
-}
-
-.footnote-display h1 { font-size: calc(1.2em * var(--footnotes-scale-factor)); }
-.footnote-display h2 { font-size: calc(1.15em * var(--footnotes-scale-factor)); }
-.footnote-display h3 { font-size: calc(1.1em * var(--footnotes-scale-factor)); }
-.footnote-display h4, .footnote-display h5, .footnote-display h6 { 
-	font-size: calc(1.05em * var(--footnotes-scale-factor)); 
-}
-
-.footnote-display pre {
-	background-color: var(--code-background);
-	border-radius: var(--footnotes-base-spacing);
-	padding: calc(var(--footnotes-base-spacing) * 2);
-	overflow-x: auto;
-	margin: var(--footnotes-base-spacing) 0;
-}
-
-.footnote-display pre code {
-	background: none;
-	padding: 0;
-}
-
-.footnote-display del {
-	text-decoration: line-through;
-	opacity: 0.7;
-}
-
-.footnote-display mark {
-	background-color: var(--text-highlight-bg);
-	color: var(--text-normal);
-	padding: 1px 2px;
-	border-radius: 2px;
-}
-
-/* Empty footnote placeholder styling */
-.footnote-empty-placeholder {
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-.footnote-display .search-highlight {
-	background-color: var(--text-highlight-bg);
-	color: var(--text-on-accent);
-	padding: 1px 2px;
-	border-radius: 2px;
-	font-weight: 500;
-}
-
-.footnote-display > *:first-child {
-	margin-top: 0;
-}
-
-.footnote-display > *:last-child {
-	margin-bottom: 0;
-}
-
-/* Enhanced visual feedback with 4K scaling */
-.footnote-item:hover .footnote-number {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.footnote-item:hover .footnote-ref-count {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-/* NEW: Special hover effects for unreferenced footnotes with 4K scaling */
-.footnote-item.footnote-unreferenced:hover .footnote-number {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.footnote-item.footnote-unreferenced:hover .footnote-unreferenced-indicator {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-/* Visual indication when in list view mode */
-.footnotes-list[data-view="list"] {
-	border-left: calc(var(--footnotes-base-spacing) * 0.75) solid var(--color-blue);
-	padding-left: calc(var(--footnotes-base-spacing) * 2);
-}
-
-/* Enhanced visual feedback for list view button */
-.list-view-btn[data-active="true"] {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-}
-
-.list-view-btn[data-active="true"] svg {
-	color: var(--text-on-accent);
-}
-
-/* Additional header styling for better visual hierarchy */
-.footnotes-header::after {
-	content: '';
-	position: absolute;
-	bottom: -1px;
-	left: 0;
-	right: 0;
-	height: 1px;
-	background: linear-gradient(to right, transparent, var(--background-modifier-border), transparent);
-	opacity: 0.5;
-}
-
-/* Transition effects for better UX */
-.footnotes-list {
-	transition: all 0.2s ease-in-out;
-}
-
-/* Improved hover effects for better UX with 4K scaling */
-.footnotes-control-btn:hover,
-.footnotes-toggle-btn:hover {
-	box-shadow: 0 calc(var(--footnotes-base-spacing) * 0.5) calc(var(--footnotes-base-spacing) * 1) rgba(0, 0, 0, 0.1);
-}
-
-/* Focus styles for accessibility with 4K scaling */
-.footnotes-control-btn:focus,
-.footnotes-toggle-btn:focus,
-.footnotes-search-input:focus {
-	outline: calc(var(--footnotes-border-scale) * 2) solid var(--interactive-accent);
-	outline-offset: calc(var(--footnotes-border-scale) * 2);
-}
-
-/* Animation for active buttons */
-@keyframes buttonPress {
-	0% { transform: scale(1); }
-	50% { transform: scale(0.95); }
-	100% { transform: scale(1); }
-}
-
-/* Special styling for empty states */
-.footnote-text:empty::before {
-	content: '(empty footnote)';
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-/* 4K OPTIMIZATION: Container Queries for Adaptive Layout */
-@container (min-width: 400px) {
-	.footnotes-controls {
-		min-width: calc(var(--footnotes-button-scale) * 6);
-	}
-}
-
-@container (min-width: 500px) {
-	.footnote-item {
-		padding: calc(var(--footnotes-adaptive-padding) * 1.2);
-	}
-	
-	.footnote-header {
-		padding: calc(var(--footnotes-base-spacing) * 2) calc(var(--footnotes-adaptive-padding) * 1.2);
-	}
-}
-
-/* 4K OPTIMIZATION: Responsive Media Queries */
-@media (max-width: 500px) {
-	:root {
-		--footnotes-scale-factor: 1;
-		--footnotes-button-scale: 32px;
-		--footnotes-adaptive-padding: 8px;
-	}
-	
-	.footnotes-controls {
-		min-width: auto;
-		flex-wrap: wrap;
-		gap: calc(var(--footnotes-base-spacing) * 0.5);
-	}
-	
-	.footnote-list-item {
-		flex-direction: column;
-		align-items: stretch;
-	}
-	
-	.footnote-sequence {
-		margin-right: 0;
-		margin-bottom: calc(var(--footnotes-base-spacing) * 2);
-		margin-top: 0;
-	}
-	
-	.footnotes-title-row {
-		flex-direction: column;
-		align-items: center;
-		gap: var(--footnotes-base-spacing);
-	}
-	
-	.footnotes-title {
-		text-align: center;
-	}
-	
-	.footnotes-controls {
-		justify-content: center;
-	}
-	
-	.renumber-buttons {
-		flex-direction: column;
-	}
-	
-	.renumber-buttons button {
-		width: 100%;
-	}
-}
-
-/* 4K OPTIMIZATION: High-DPI Specific Optimizations */
-@media (min-resolution: 144dpi) {
-	:root {
-		--footnotes-text-rendering: optimizeQuality;
-		--footnotes-font-smoothing: subpixel-antialiased;
-	}
-}
-
-@media (min-resolution: 192dpi) {
-	:root {
-		--footnotes-border-scale: clamp(1px, 0.05vw + 1px, 1.5px);
-	}
-}
-
-/* 4K OPTIMIZATION: Large Screen Optimizations */
-@media (min-width: 2560px) {
-	:root {
-		--footnotes-scale-factor: clamp(1.2, 1 + (100vw - 2560px) / 5120, 1.8);
-	}
-	
-	.footnotes-list {
-		max-width: none; /* Allow full width utilization */
-	}
-	
-	.footnote-item {
-		max-width: none; /* Remove width constraints for better space utilization */
-	}
-}
-
-/* 4K OPTIMIZATION: Ultra-wide Screen Support */
-@media (min-width: 3440px) {
-	:root {
-		--footnotes-scale-factor: 1.6;
-	}
-	
-	.footnotes-controls {
-		min-width: calc(var(--footnotes-button-scale) * 7);
-		gap: calc(var(--footnotes-base-spacing) * 1.5);
-	}
-}
-
-/* 4K OPTIMIZATION: 8K and Beyond */
-@media (min-width: 5120px) {
-	:root {
-		--footnotes-scale-factor: 2;
-		--footnotes-adaptive-padding: clamp(16px, 1vw + 8px, 32px);
-	}
-}/*
-Footnotes Manager - Enhanced with unreferenced footnotes support
+Footnotes Manager - Compact Version (Similar to Comments Manager spacing)
 */
 
 /* Panel Styles */
@@ -1213,6 +11,17 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	border-bottom: 1px solid var(--background-modifier-border);
 	padding: 10px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.footnotes-header::after {
+	content: '';
+	position: absolute;
+	bottom: -1px;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(to right, transparent, var(--background-modifier-border), transparent);
+	opacity: 0.5;
 }
 
 .footnotes-title {
@@ -1232,7 +41,203 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 .footnotes-list {
 	padding: 5px;
 	margin-top: 0;
-	font-size: inherit;
+}
+
+/* Title Row and Controls */
+.footnotes-title-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+	min-height: 32px;
+}
+
+.footnotes-title {
+	flex: 1;
+	text-align: left;
+}
+
+.footnotes-controls {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	flex-shrink: 0;
+	min-width: 180px;
+	justify-content: flex-end;
+}
+
+/* Navigation and Control Button Styles */
+.footnotes-control-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+}
+
+.footnotes-control-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+	transform: translateY(-1px);
+}
+
+.footnotes-control-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-control-btn:active:not(:disabled) {
+	background: var(--background-modifier-active);
+	transform: translateY(1px);
+}
+
+.footnotes-control-btn:focus {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+.footnotes-control-btn svg {
+	transition: all 0.1s ease;
+	width: 16px;
+	height: 16px;
+}
+
+.footnotes-control-btn:hover svg {
+	transform: scale(1.05);
+}
+
+/* Specific button styles */
+.nav-btn svg { color: var(--color-accent); }
+.return-btn svg { color: var(--color-green); }
+.renumber-btn svg { color: var(--color-orange); }
+.list-view-btn svg { color: var(--color-blue); }
+
+/* Toggle Button Styles */
+.footnotes-toggle-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+	margin-left: 4px;
+}
+
+.footnotes-toggle-btn:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+.footnotes-toggle-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-toggle-btn:active:not(:disabled) {
+	background: var(--background-modifier-active);
+	transform: translateY(1px);
+}
+
+.footnotes-toggle-btn:focus {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+.footnotes-toggle-btn svg {
+	transition: all 0.1s ease;
+	width: 16px;
+	height: 16px;
+}
+
+.footnotes-toggle-btn:hover svg {
+	color: var(--interactive-accent);
+	transform: scale(1.05);
+}
+
+/* Search functionality styles */
+.footnotes-search-container {
+	position: relative;
+	margin-bottom: 8px;
+}
+
+.footnotes-search-input {
+	width: 100%;
+	padding: 6px 30px 6px 8px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	border-radius: 4px;
+	font-size: 13px;
+	transition: border-color 0.1s ease;
+}
+
+.footnotes-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.footnotes-search-input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.footnotes-search-input::placeholder {
+	color: var(--text-muted);
+}
+
+.footnotes-clear-search {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 20px;
+	height: 20px;
+	border: none;
+	background: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: 2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.1s ease;
+}
+
+.footnotes-clear-search:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.footnotes-clear-search svg {
+	width: 14px;
+	height: 14px;
+	transition: all 0.1s ease;
+}
+
+.footnotes-clear-search:hover svg {
+	transform: scale(1.1);
+}
+
+/* Search highlighting styles */
+.search-highlight {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-on-accent);
+	padding: 1px 2px;
+	border-radius: 2px;
+	font-weight: 500;
 }
 
 /* Header Section Styles */
@@ -1243,13 +248,13 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 .footnote-header {
 	display: flex;
 	align-items: center;
-	padding: 6px 10px;
+	padding: 4px 8px;
 	background-color: var(--background-secondary);
 	border-radius: 4px;
-	margin-bottom: 3px;
+	margin-bottom: 2px;
 	font-weight: 500;
 	color: var(--text-normal);
-	font-size: 0.9em;
+	font-size: 13px;
 	transition: background-color 0.1s ease;
 }
 
@@ -1257,19 +262,17 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	background-color: var(--background-modifier-hover);
 }
 
-/* NEW: Special styling for unreferenced header */
+/* Unreferenced footnotes styling */
 .footnote-unreferenced-header {
-	background-color: var(--background-secondary);
-	border-left: 3px solid var(--text-error);
+	background-color: var(--background-secondary) !important;
+	border-left: 4px solid var(--text-error);
+	color: var(--text-error);
+	font-style: italic;
 	font-weight: 600;
 }
 
 .footnote-unreferenced-header:hover {
-	background-color: var(--background-modifier-hover);
-}
-
-.footnote-unreferenced-header .footnote-header-text {
-	color: var(--text-error);
+	background-color: var(--background-modifier-hover) !important;
 }
 
 .footnote-collapse-icon {
@@ -1290,8 +293,8 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 
 .footnote-collapse-icon svg {
 	transition: transform 0.1s ease;
-	width: 14px;
-	height: 14px;
+	width: 12px;
+	height: 12px;
 }
 
 .footnote-collapse-icon:hover svg {
@@ -1310,16 +313,16 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 }
 
 .footnote-group-footnotes {
-	margin-left: 24px;
+	margin-left: 20px;
 	border-left: 2px solid var(--background-modifier-border);
-	padding-left: 10px;
-	margin-top: 6px;
+	padding-left: 8px;
+	margin-top: 4px;
 }
 
 /* Individual Footnote Styles */
 .footnote-item {
-	padding: 14px;
-	margin: 6px 0;
+	padding: 12px;
+	margin: 4px 0;
 	border-radius: 6px;
 	cursor: pointer;
 	border: 1px solid transparent;
@@ -1342,7 +345,6 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* NEW: Special styling for unreferenced footnotes */
 .footnote-item.footnote-unreferenced {
 	border-left: 3px solid var(--text-error);
 	background-color: var(--background-primary);
@@ -1370,14 +372,13 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 .footnote-number {
 	font-weight: 600;
 	color: var(--interactive-accent);
-	font-size: 0.85em;
+	font-size: 14px;
 	background-color: var(--background-secondary);
-	padding: 3px 8px;
+	padding: 2px 6px;
 	border-radius: 3px;
 	border: 1px solid var(--background-modifier-border);
 }
 
-/* NEW: Multi-section footnote icon */
 .footnote-multi-section-icon {
 	display: flex;
 	align-items: center;
@@ -1400,7 +401,6 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	color: var(--interactive-accent);
 }
 
-/* NEW: Unreferenced footnote number styling */
 .footnote-unreferenced .footnote-number {
 	color: var(--text-error);
 	background-color: var(--background-secondary);
@@ -1409,19 +409,18 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 
 .footnote-ref-count {
 	color: var(--text-muted);
-	font-size: 0.75em;
+	font-size: 11px;
 	background-color: var(--background-secondary);
-	padding: 2px 6px;
+	padding: 1px 4px;
 	border-radius: 2px;
 	border: 1px solid var(--background-modifier-border);
 }
 
-/* NEW: Unreferenced indicator styling */
 .footnote-unreferenced-indicator {
 	color: var(--text-error);
-	font-size: 0.75em;
+	font-size: 11px;
 	background-color: var(--background-secondary);
-	padding: 2px 6px;
+	padding: 1px 4px;
 	border-radius: 2px;
 	border: 1px solid var(--background-modifier-border);
 	font-weight: 600;
@@ -1436,19 +435,24 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 
 .footnote-text {
 	color: var(--text-normal);
-	font-size: 0.9em;
-	line-height: 1.5;
+	font-size: 14px;
 	margin-bottom: 8px;
 	word-wrap: break-word;
 	border-radius: 3px;
-	padding: 6px 8px;
-	min-height: 24px;
+	padding: 4px 6px;
+	min-height: 20px;
 	white-space: pre-wrap;
 	background-color: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
 }
 
-/* Display vs Edit states for footnote content */
+.footnote-text:empty::before {
+	content: '(empty footnote)';
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Display vs Edit states */
 .footnote-display {
 	cursor: pointer;
 	transition: background-color 0.1s ease;
@@ -1458,7 +462,6 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	background-color: var(--background-modifier-hover);
 }
 
-/* NEW: Non-editable display for unreferenced footnotes */
 .footnote-unreferenced .footnote-display {
 	cursor: default;
 }
@@ -1486,14 +489,14 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 
 .footnote-textarea {
 	width: 100%;
-	min-height: 70px;
+	min-height: 60px;
 	resize: vertical;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 3px;
-	padding: 8px 10px;
+	padding: 6px 8px;
 	font-family: var(--font-text);
-	font-size: 0.9em;
-	line-height: 1.5;
+	font-size: 14px;
+	line-height: 1.4;
 	color: var(--text-normal);
 	background-color: var(--background-primary);
 	transition: border-color 0.1s ease;
@@ -1531,9 +534,9 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 }
 
 .footnote-reference-btn {
-	margin: 3px 6px 3px 0;
-	padding: 4px 8px;
-	font-size: 0.75em;
+	margin: 2px 4px 2px 0;
+	padding: 2px 6px;
+	font-size: 11px;
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
 	border: none;
@@ -1551,6 +554,7 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	transform: translateY(0);
 }
 
+/* Action Buttons */
 .footnote-actions {
 	display: flex;
 	gap: 6px;
@@ -1623,398 +627,29 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	transform: scale(1.1);
 }
 
-/* Title Row and Controls */
-.footnotes-title-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 8px;
-	min-height: 32px;
-}
-
-.footnotes-title {
-	flex: 1;
-	text-align: left;
-}
-
-.footnotes-controls {
-	display: flex;
-	gap: 4px;
-	align-items: center;
-	flex-shrink: 0;
-	min-width: 180px;
-	justify-content: flex-end;
-}
-
-/* Navigation and Control Button Styles */
-.footnotes-control-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 32px;
-	padding: 0;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.1s ease;
-	min-width: 36px;
-	min-height: 32px;
-	flex-shrink: 0;
-}
-
-.footnotes-control-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.footnotes-control-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-control-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-	animation: buttonPress 0.1s ease-in-out;
-}
-
-.footnotes-control-btn svg {
-	transition: all 0.1s ease;
-	width: 18px;
-	height: 18px;
-}
-
-.footnotes-control-btn:hover svg {
-	transform: scale(1.05);
-}
-
-/* Specific button styles */
-.nav-btn svg {
-	color: var(--color-accent);
-}
-
-.nav-btn:hover svg {
-	color: var(--color-accent);
-}
-
-.return-btn svg {
-	color: var(--color-green);
-}
-
-.return-btn:hover svg {
-	color: var(--color-green);
-}
-
-.renumber-btn svg {
-	color: var(--color-orange);
-}
-
-.renumber-btn:hover svg {
-	color: var(--color-orange);
-}
-
-.list-view-btn svg {
-	color: var(--color-blue);
-}
-
-.list-view-btn:hover svg {
-	color: var(--color-blue);
-	transform: scale(1.05);
-}
-
-/* Toggle Button Styles */
-.footnotes-toggle-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 32px;
-	padding: 0;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-	color: var(--text-normal);
-	border-radius: 4px;
-	cursor: pointer;
-	transition: all 0.1s ease;
-	margin-left: 4px;
-	min-width: 36px;
-	min-height: 32px;
-	flex-shrink: 0;
-}
-
-.footnotes-toggle-btn:hover:not(:disabled) {
-	background: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.footnotes-toggle-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-toggle-btn:active:not(:disabled) {
-	background: var(--background-modifier-active);
-	transform: translateY(1px);
-	animation: buttonPress 0.1s ease-in-out;
-}
-
-.footnotes-toggle-btn svg {
-	transition: all 0.1s ease;
-	width: 18px;
-	height: 18px;
-}
-
-.footnotes-toggle-btn:hover svg {
-	color: var(--interactive-accent);
-	transform: scale(1.05);
-}
-
-/* Search functionality styles */
-.footnotes-search-container {
-	position: relative;
-	margin-bottom: 8px;
-}
-
-.footnotes-search-input {
-	width: 100%;
-	padding: 8px 32px 8px 10px;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-primary);
-	color: var(--text-normal);
-	border-radius: 4px;
-	font-size: 0.9em;
-	transition: border-color 0.1s ease;
-}
-
-.footnotes-search-input:focus {
-	outline: 2px solid var(--interactive-accent);
-	outline-offset: 2px;
-	border-color: var(--interactive-accent);
-}
-
-.footnotes-search-input:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.footnotes-search-input::placeholder {
-	color: var(--text-muted);
-}
-
-.footnotes-clear-search {
-	position: absolute;
-	right: 4px;
-	top: 50%;
-	transform: translateY(-50%);
-	width: 20px;
-	height: 20px;
-	border: none;
-	background: none;
-	color: var(--text-muted);
-	cursor: pointer;
-	border-radius: 2px;
-	font-size: 14px;
-	font-weight: bold;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.1s ease;
-}
-
-.footnotes-clear-search:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
-}
-
-.footnotes-clear-search svg {
-	width: 14px;
-	height: 14px;
-	transition: all 0.1s ease;
-}
-
-.footnotes-clear-search:hover svg {
-	transform: scale(1.1);
-}
-
-/* Search highlighting styles */
-.search-highlight {
-	background-color: var(--text-highlight-bg);
-	color: var(--text-on-accent);
-	padding: 1px 2px;
-	border-radius: 2px;
-	font-weight: 500;
-}
-
-/* NEW: Enhanced Renumber Modal Styles */
-.renumber-description-container {
-	margin-bottom: 16px;
-}
-
-.renumber-section {
-	margin-bottom: 12px;
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	border-left: 4px solid var(--interactive-accent);
-}
-
-.renumber-section h3 {
-	margin: 0 0 8px 0;
-	color: var(--text-normal);
-	font-size: 14px;
-	font-weight: 600;
-}
-
-.renumber-section p {
-	margin: 0;
-	color: var(--text-normal);
-	line-height: 1.4;
-	font-size: 13px;
-}
-
-.renumber-no-issues {
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	border-left: 4px solid var(--color-green);
-	color: var(--text-normal);
-	margin: 0;
-}
-
-.renumber-options {
-	margin-bottom: 16px;
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	border-left: 4px solid var(--color-blue);
-}
-
-.renumber-options h3 {
-	margin: 0 0 12px 0;
-	color: var(--text-normal);
-	font-size: 14px;
-	font-weight: 600;
-}
-
-.renumber-option {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 8px;
-	padding: 8px;
-	background-color: var(--background-primary);
-	border-radius: 4px;
-	border: 1px solid var(--background-modifier-border);
-	transition: all 0.1s ease;
-}
-
-.renumber-option:hover {
-	background-color: var(--background-modifier-hover);
-	border-color: var(--interactive-accent);
-}
-
-.renumber-option input[type="checkbox"] {
-	margin: 0;
-	accent-color: var(--interactive-accent);
-}
-
-.renumber-option label {
-	margin: 0;
-	color: var(--text-normal);
-	font-size: 13px;
-	cursor: pointer;
-	flex: 1;
-}
-
-.renumber-warning {
-	margin-bottom: 20px;
-	padding: 12px;
-	background-color: var(--background-secondary);
-	border-radius: 4px;
-	border-left: 4px solid var(--color-orange);
-	font-size: 13px;
-	line-height: 1.4;
-	color: var(--text-normal);
-}
-
-.renumber-buttons {
-	display: flex;
-	gap: 8px;
-	justify-content: flex-end;
-	padding-top: 16px;
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.renumber-buttons button {
-	padding: 8px 16px;
-	border-radius: 4px;
-	border: 1px solid var(--background-modifier-border);
-	cursor: pointer;
-	transition: all 0.1s ease;
-	font-size: 14px;
-}
-
-.renumber-buttons button.mod-cta {
+/* Enhanced visual feedback */
+.footnote-item:hover .footnote-number {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
-	border-color: var(--interactive-accent);
 }
 
-.renumber-buttons button.mod-cta:hover:not(:disabled) {
-	background-color: var(--interactive-accent-hover);
+.footnote-item:hover .footnote-ref-count {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
-.renumber-buttons button.mod-cta:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
+.footnote-item.footnote-unreferenced:hover .footnote-number {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
-.renumber-buttons button:not(.mod-cta) {
-	background-color: var(--background-secondary);
-	color: var(--text-normal);
-}
-
-.renumber-buttons button:not(.mod-cta):hover {
-	background-color: var(--background-modifier-hover);
-}
-
-/* Settings Instructions Styles */
-.footnotes-instructions {
-	margin-top: 24px;
-	padding: 16px;
-	background-color: var(--background-secondary);
-	border-radius: 6px;
-	border-left: 4px solid var(--color-green);
-}
-
-.footnotes-instructions h3 {
-	margin: 0 0 12px 0;
-	color: var(--text-normal);
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.footnotes-instructions ol {
-	margin: 0;
-	padding-left: 20px;
-	color: var(--text-normal);
-}
-
-.footnotes-instructions li {
-	margin-bottom: 8px;
-	line-height: 1.4;
+.footnote-item.footnote-unreferenced:hover .footnote-unreferenced-indicator {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
 }
 
 /* List View Styles */
 .footnote-list-item {
-	display: flex;
-	align-items: flex-start;
 	margin-bottom: 8px;
 	padding: 8px;
 	border-radius: 4px;
@@ -2023,17 +658,10 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 }
 
 .footnote-sequence {
-	font-weight: 600;
-	color: var(--text-muted);
-	font-size: 0.9em;
-	margin-right: 12px;
-	margin-top: 12px;
-	min-width: 24px;
-	flex-shrink: 0;
+	display: none; /* Hide sequence numbers in list view */
 }
 
 .footnote-list-item .footnote-item {
-	flex: 1;
 	margin: 0;
 	background-color: transparent;
 	border: none;
@@ -2051,6 +679,20 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 
 .footnote-list-item:nth-child(odd) {
 	background-color: var(--background-secondary);
+}
+
+.footnotes-list[data-view="list"] {
+	border-left: 3px solid var(--color-blue);
+	padding-left: 8px;
+}
+
+.list-view-btn[data-active="true"] {
+	background-color: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+}
+
+.list-view-btn[data-active="true"] svg {
+	color: var(--text-on-accent);
 }
 
 /* Styling for rendered markdown in footnotes */
@@ -2133,7 +775,6 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	border-radius: 2px;
 }
 
-/* Empty footnote placeholder styling */
 .footnote-empty-placeholder {
 	color: var(--text-muted);
 	font-style: italic;
@@ -2155,31 +796,105 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	margin-bottom: 0;
 }
 
+/* Renumber Modal Styles */
+.renumber-description {
+	margin-bottom: 16px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--interactive-accent);
+	color: var(--text-normal);
+	line-height: 1.4;
+}
+
+.renumber-warning {
+	margin-bottom: 20px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	border-left: 4px solid var(--color-orange);
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--text-normal);
+}
+
+.renumber-buttons {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.renumber-buttons button {
+	padding: 8px 16px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	transition: all 0.1s ease;
+	font-size: 14px;
+}
+
+.renumber-buttons button.mod-cta {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.renumber-buttons button.mod-cta:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+.renumber-buttons button:not(.mod-cta) {
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.renumber-buttons button:not(.mod-cta):hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* Settings Instructions Styles */
+.footnotes-instructions {
+	margin-top: 24px;
+	padding: 16px;
+	background-color: var(--background-secondary);
+	border-radius: 6px;
+	border-left: 4px solid var(--color-green);
+}
+
+.footnotes-instructions h3 {
+	margin: 0 0 12px 0;
+	color: var(--text-normal);
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.footnotes-instructions ol {
+	margin: 0;
+	padding-left: 20px;
+	color: var(--text-normal);
+}
+
+.footnotes-instructions li {
+	margin-bottom: 8px;
+	line-height: 1.4;
+}
+
+/* Animation for active buttons */
+@keyframes buttonPress {
+	0% { transform: scale(1); }
+	50% { transform: scale(0.95); }
+	100% { transform: scale(1); }
+}
+
+.footnotes-control-btn:active,
+.footnotes-toggle-btn:active {
+	animation: buttonPress 0.1s ease-in-out;
+}
+
 /* Responsive adjustments for smaller screens */
-@media (max-width: 500px) {
-	.footnotes-controls {
-		min-width: auto;
-		flex-wrap: wrap;
-		gap: 2px;
-	}
-	
-	.footnotes-control-btn,
-	.footnotes-toggle-btn {
-		min-width: 32px;
-		min-height: 28px;
-	}
-	
-	.footnote-list-item {
-		flex-direction: column;
-		align-items: stretch;
-	}
-	
-	.footnote-sequence {
-		margin-right: 0;
-		margin-bottom: 8px;
-		margin-top: 0;
-	}
-	
+@media (max-width: 300px) {
 	.footnotes-title-row {
 		flex-direction: column;
 		align-items: center;
@@ -2203,160 +918,11 @@ Footnotes Manager - Enhanced with unreferenced footnotes support
 	}
 }
 
-/* High DPI and text size improvements */
-@media (min-resolution: 144dpi), (min-resolution: 1.5dppx) {
-	.footnotes-header {
-		padding: 14px;
-	}
-	
-	.footnote-item {
-		padding: 16px;
-		margin: 8px 0;
-	}
-	
-	.footnote-text,
-	.footnote-textarea {
-		font-size: 1em;
-		padding: 8px 10px;
-	}
-	
-	.footnotes-control-btn,
-	.footnotes-toggle-btn {
-		width: 40px;
-		height: 36px;
-	}
-	
-	.footnotes-control-btn svg,
-	.footnotes-toggle-btn svg {
-		width: 20px;
-		height: 20px;
-	}
-	
-	.footnote-collapse-icon svg {
-		width: 16px;
-		height: 16px;
-	}
-}
-
-/* Extra large screens (4K+) */
-@media (min-width: 2560px) {
-	.footnotes-title {
-		font-size: 1.25em;
-	}
-	
-	.footnote-header {
-		font-size: 1em;
-		padding: 8px 12px;
-	}
-	
-	.footnote-text,
-	.footnote-textarea {
-		font-size: 1.1em;
-		padding: 10px 12px;
-	}
-	
-	.footnotes-search-input {
-		font-size: 1em;
-		padding: 10px 36px 10px 12px;
-	}
-	
-	.footnote-number {
-		font-size: 1em;
-		padding: 4px 10px;
-	}
-	
-	.footnote-ref-count,
-	.footnote-unreferenced-indicator {
-		font-size: 0.85em;
-		padding: 3px 8px;
-	}
-	
-	.footnote-reference-btn {
-		font-size: 0.85em;
-		padding: 5px 10px;
-		margin: 4px 8px 4px 0;
-	}
-}
-
-/* Focus styles for accessibility */
-.footnotes-control-btn:focus,
-.footnotes-toggle-btn:focus,
-.footnotes-search-input:focus {
-	outline: 2px solid var(--interactive-accent);
-	outline-offset: 2px;
-}
-
-/* Animation for active buttons */
-@keyframes buttonPress {
-	0% { transform: scale(1); }
-	50% { transform: scale(0.95); }
-	100% { transform: scale(1); }
-}
-
-/* Special styling for empty states */
-.footnote-text:empty::before {
-	content: '(empty footnote)';
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-/* Enhanced visual feedback */
-.footnote-item:hover .footnote-number {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.footnote-item:hover .footnote-ref-count {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-/* NEW: Special hover effects for unreferenced footnotes */
-.footnote-item.footnote-unreferenced:hover .footnote-number {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-.footnote-item.footnote-unreferenced:hover .footnote-unreferenced-indicator {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
-}
-
-/* Visual indication when in list view mode */
-.footnotes-list[data-view="list"] {
-	border-left: 3px solid var(--color-blue);
-	padding-left: 8px;
-}
-
-/* Enhanced visual feedback for list view button */
-.list-view-btn[data-active="true"] {
-	background-color: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-}
-
-.list-view-btn[data-active="true"] svg {
-	color: var(--text-on-accent);
-}
-
-/* Additional header styling for better visual hierarchy */
-.footnotes-header::after {
-	content: '';
-	position: absolute;
-	bottom: -1px;
-	left: 0;
-	right: 0;
-	height: 1px;
-	background: linear-gradient(to right, transparent, var(--background-modifier-border), transparent);
-	opacity: 0.5;
-}
-
-/* Transition effects for better UX */
-.footnotes-list {
-	transition: all 0.2s ease-in-out;
-}
-
-/* Improved hover effects for better UX */
-.footnotes-control-btn:hover,
-.footnotes-toggle-btn:hover {
+/* Hover effects for better UX */
+.footnotes-control-btn:hover {
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.footnotes-toggle-btn:hover {
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
