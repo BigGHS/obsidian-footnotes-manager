@@ -96,7 +96,7 @@ interface OrphanedReference {
 	fullMatch: string;
 }
 
-// ADD THIS NEW INTERFACE HERE:
+// Interface for renumber options
 interface RenumberOptions {
 	fixGaps: boolean;
 	removeUnreferenced: boolean;
@@ -314,7 +314,7 @@ class EnhancedRenumberConfirmationModal extends Modal {
 	}
 }
 
-// FootnotesView Class
+// FootnotesView Class - Beginning
 class FootnotesView extends ItemView {
 	plugin: FootnotesManagerPlugin;
 	private currentFile: TFile | null = null;
@@ -324,7 +324,7 @@ class FootnotesView extends ItemView {
 	private isNavigating: boolean = false;
 	private pendingNavigation: string | null = null;
 	private isListView: boolean = false;
-	private cursorListener?: () => void;
+	private cursorListener ? : () => void;
 	private lastCursorCheck: number = 0;
 	private cursorThrottleDelay: number = 300;
 	private isProcessingCursor: boolean = false;
@@ -649,7 +649,7 @@ class FootnotesView extends ItemView {
 			cls: 'footnotes-list'
 		});
 
-		// MOVED: Set up search functionality for BOTH view modes
+		// Set up search functionality for BOTH view modes
 		if (searchInput && clearSearchBtn) {
 			let searchTimeout: number | null = null;
 			let currentSearchTerm = '';
@@ -1081,7 +1081,7 @@ class FootnotesView extends ItemView {
 		}
 	}
 
-	// UPDATED: createFootnoteElement with unreferenced handling
+	// UPDATED: createFootnoteElement with fixed click behavior
 	private createFootnoteElement(footnote: FootnoteData, container: Element) {
 		const footnoteEl = container.createEl('div', {
 			cls: 'footnote-item'
@@ -1190,24 +1190,24 @@ class FootnotesView extends ItemView {
 				});
 
 				refEl.addEventListener('click', (e) => {
-				    e.stopPropagation();
-				    e.preventDefault();
-    
-				    this.debug('Reference button clicked for footnote:', footnote.number, 'index:', index);
-    
-				    // Ensure we have the current file reference
-				    this.debug('Refreshing current file reference before navigation');
-				    const activeFile = this.app.workspace.getActiveFile();
-				    if (activeFile) {
-				        this.currentFile = activeFile;
-				        this.debug('Updated currentFile to active file:', activeFile.path);
-				    }
-    
-				    // Set a focused skip period to prevent interference
-				    this.plugin.setSkipRefreshPeriod(1500);
-    
-				    // Call the navigation method directly without any delays
-				    this.plugin.highlightFootnoteInEditor(footnote, index);
+					e.stopPropagation();
+					e.preventDefault();
+
+					this.debug('Reference button clicked for footnote:', footnote.number, 'index:', index);
+
+					// Ensure we have the current file reference
+					this.debug('Refreshing current file reference before navigation');
+					const activeFile = this.app.workspace.getActiveFile();
+					if (activeFile) {
+						this.currentFile = activeFile;
+						this.debug('Updated currentFile to active file:', activeFile.path);
+					}
+
+					// Set a focused skip period to prevent interference
+					this.plugin.setSkipRefreshPeriod(1500);
+
+					// Call the navigation method directly without any delays
+					this.plugin.highlightFootnoteInEditor(footnote, index);
 				});
 			});
 		}
@@ -1243,6 +1243,32 @@ class FootnotesView extends ItemView {
 			}
 		});
 		deleteBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/></svg>`;
+
+		// FIXED: Add specific click handler for footnote number to jump to definition
+		numberEl.addEventListener('click', (e) => {
+			this.debug('Footnote number clicked, jumping to definition');
+			e.preventDefault();
+			e.stopPropagation();
+
+			this.pendingNavigation = `footnote-${footnote.number}`;
+			this.plugin.setSkipRefreshPeriod(2000);
+
+			this.jumpToFootnoteDefinition(footnote);
+
+			setTimeout(() => {
+				if (this.pendingNavigation === `footnote-${footnote.number}`) {
+					this.debug('Executing delayed navigation for footnote:', footnote.number);
+					this.jumpToFootnoteDefinition(footnote);
+					this.pendingNavigation = null;
+				}
+			}, 50);
+
+			setTimeout(() => {
+				if (this.pendingNavigation === `footnote-${footnote.number}`) {
+					this.pendingNavigation = null;
+				}
+			}, 1000);
+		});
 
 		let originalText = footnote.content;
 		let isEditing = false;
@@ -1361,87 +1387,20 @@ class FootnotesView extends ItemView {
 				cancelEdit();
 			});
 
-			// Click to edit functionality for referenced footnotes
-			footnoteEl.addEventListener('click', (e) => {
-				this.debug('Footnote clicked, isEditing:', isEditing, 'target:', e.target);
-
-				if (isEditing) return;
-
-				const target = e.target as HTMLElement;
-				if (target.tagName === 'BUTTON' || target.closest('button')) {
-					this.debug('Click was on button, ignoring');
-					return;
-				}
-
-				if (target === displayEl || displayEl.contains(target)) {
-					this.debug('Clicked on display element, entering edit mode');
-					e.preventDefault();
-					e.stopPropagation();
-					enterEditMode();
-					return;
-				}
-
-				if (target === textEl) {
-					this.debug('Clicked on text element, entering edit mode');
-					e.preventDefault();
-					e.stopPropagation();
-					enterEditMode();
-					return;
-				}
-
-				// Default click behavior - jump to footnote definition
-				this.debug('Calling jumpToFootnoteDefinition');
+			// FIXED: Click to edit functionality - only for footnote content display
+			displayEl.addEventListener('click', (e) => {
+				this.debug('Footnote content clicked, entering edit mode');
 				e.preventDefault();
 				e.stopPropagation();
-
-				this.pendingNavigation = `footnote-${footnote.number}`;
-				this.plugin.setSkipRefreshPeriod(2000);
-
-				this.jumpToFootnoteDefinition(footnote);
-
-				setTimeout(() => {
-					if (this.pendingNavigation === `footnote-${footnote.number}`) {
-						this.debug('Executing delayed navigation for footnote:', footnote.number);
-						this.jumpToFootnoteDefinition(footnote);
-						this.pendingNavigation = null;
-					}
-				}, 50);
-
-				setTimeout(() => {
-					if (this.pendingNavigation === `footnote-${footnote.number}`) {
-						this.pendingNavigation = null;
-					}
-				}, 1000);
+				enterEditMode();
 			});
+
+			// FIXED: Remove general click handler that was jumping to definition
+			// The footnote element no longer has a general click handler that jumps to definition
+			// Only the footnote number and reference buttons will jump to the main text
 		} else {
-			// NEW: For unreferenced footnotes, only allow navigation to definition
-			footnoteEl.addEventListener('click', (e) => {
-				const target = e.target as HTMLElement;
-				if (target.tagName === 'BUTTON' || target.closest('button')) {
-					return;
-				}
-
-				e.preventDefault();
-				e.stopPropagation();
-
-				this.pendingNavigation = `footnote-${footnote.number}`;
-				this.plugin.setSkipRefreshPeriod(2000);
-
-				this.jumpToFootnoteDefinition(footnote);
-
-				setTimeout(() => {
-					if (this.pendingNavigation === `footnote-${footnote.number}`) {
-						this.jumpToFootnoteDefinition(footnote);
-						this.pendingNavigation = null;
-					}
-				}, 50);
-
-				setTimeout(() => {
-					if (this.pendingNavigation === `footnote-${footnote.number}`) {
-						this.pendingNavigation = null;
-					}
-				}, 1000);
-			});
+			// NEW: For unreferenced footnotes, only footnote number allows navigation to definition
+			// No general click handler on the footnote element
 		}
 
 		deleteBtn.addEventListener('click', (e) => {
@@ -1797,183 +1756,933 @@ class FootnotesView extends ItemView {
 		});
 	}
 
-	// ADD: New method to filter and render list view with search
-	private filterAndRenderListView(footnotes: FootnoteData[], container: Element, searchTerm: string) {
-		this.debug('Filtering list view with search term:', searchTerm);
+	private findFirstEditableLine(editor: Editor): number {
+		const content = editor.getValue();
+		const lines = content.split('\n');
 
-		let filteredFootnotes = footnotes;
+		this.debug('Finding first editable line in document with', lines.length, 'lines');
 
-		if (searchTerm) {
-			filteredFootnotes = footnotes.filter(footnote =>
-				footnote.content.toLowerCase().includes(searchTerm) ||
-				footnote.number.toLowerCase().includes(searchTerm)
-			);
+		if (lines[0] && lines[0].trim() === '---') {
+			this.debug('Document starts with frontmatter, looking for end');
 
-			this.debug('Filtered to', filteredFootnotes.length, 'footnotes');
+			for (let i = 1; i < lines.length; i++) {
+				if (lines[i].trim() === '---') {
+					this.debug('Found end of frontmatter at line', i);
+
+					for (let j = i + 1; j < lines.length; j++) {
+						if (lines[j].trim() !== '') {
+							this.debug('First content line after frontmatter:', j);
+							return j;
+						}
+					}
+
+					return i + 1;
+				}
+			}
+
+			this.debug('Frontmatter missing closing ---, defaulting to line 1');
+			return 1;
 		}
 
-		if (filteredFootnotes.length === 0 && searchTerm) {
-			container.createEl('div', {
-				text: 'No matching footnotes found',
-				cls: 'footnotes-empty'
-			});
+		for (let i = 0; i < lines.length; i++) {
+			if (lines[i].trim() !== '') {
+				this.debug('First non-empty line found at:', i);
+				return i;
+			}
+		}
+
+		this.debug('Document appears empty, defaulting to line 0');
+		return 0;
+	}
+
+	public setSkipRefreshPeriod(milliseconds: number = 1000) {
+		this.skipNextRefresh = true;
+		this.skipRefreshUntil = Date.now() + milliseconds;
+		this.debug('Set skip refresh period until:', this.skipRefreshUntil);
+
+		setTimeout(() => {
+			this.skipNextRefresh = false;
+			this.debug('Cleared skipNextRefresh flag');
+		}, milliseconds);
+	}
+
+	debounceRefresh() {
+		this.debug('debounceRefresh called, skipNextRefresh:', this.skipNextRefresh, 'skipRefreshUntil:', this.skipRefreshUntil, 'isNavigating:', this.isNavigating, 'now:', Date.now());
+
+		if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
+			this.debug('Skipping refresh due to skip flags');
 			return;
 		}
 
-		// Sort footnotes by their first reference position (document order)
-		const sortedFootnotes = [...filteredFootnotes].sort((a, b) => {
-			const aFirstRef = a.references[0];
-			const bFirstRef = b.references[0];
-			if (!aFirstRef || !bFirstRef) return 0;
-			return aFirstRef.startPos - bFirstRef.startPos;
-		});
-
-		// Create list items with search highlighting
-		sortedFootnotes.forEach((footnote, index) => {
-			const footnoteContainer = container.createEl('div', {
-				cls: 'footnote-list-item'
-			});
-
-			// Add sequence number for list view
-			const sequenceEl = footnoteContainer.createEl('div', {
-				cls: 'footnote-sequence',
-				text: `${index + 1}.`
-			});
-
-			// Create the footnote element with search highlighting
-			this.createFootnoteElementWithSearch(footnote, footnoteContainer, searchTerm);
-		});
-
-		this.debug('List view rendered with search successfully');
+		if (this.refreshTimeout) {
+			window.clearTimeout(this.refreshTimeout);
+		}
+		this.refreshTimeout = window.setTimeout(() => {
+			if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
+				this.debug('Skipping delayed refresh due to skip flags');
+				return;
+			}
+			this.debug('Executing delayed refresh');
+			this.refreshFootnotesView();
+		}, 500);
 	}
 
-	// ADD: New method to create footnote element with search highlighting
-	private createFootnoteElementWithSearch(footnote: FootnoteData, container: Element, searchTerm: string) {
-		// Store the search term for highlighting
-		(this as any).currentSearchTerm = searchTerm;
+	async activateView() {
+		const {
+			workspace
+		} = this.app;
 
-		// Use existing createFootnoteElement method
-		this.createFootnoteElement(footnote, container);
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
 
-		// Apply search highlighting if there's a search term
-		if (searchTerm) {
-			const footnoteEl = container.querySelector('.footnote-item');
-			if (footnoteEl) {
-				this.highlightSearchInFootnoteElement(footnoteEl as HTMLElement, searchTerm);
+		if (leaves.length > 0) {
+			leaf = leaves[0];
+			workspace.revealLeaf(leaf);
+		} else {
+			leaf = workspace.getRightLeaf(false);
+			if (leaf) {
+				await leaf.setViewState({
+					type: FOOTNOTES_VIEW_TYPE,
+					active: true
+				});
 			}
 		}
+
+		this.refreshFootnotesView();
 	}
 
-	// ADD: New method to highlight search terms in footnote elements
-	private highlightSearchInFootnoteElement(element: HTMLElement, searchTerm: string) {
-		if (!searchTerm) return;
+	refreshFootnotesView() {
+		if (this.skipNextRefresh || Date.now() < this.skipRefreshUntil || this.isNavigating) {
+			this.debug('Skipping footnotes view refresh due to skip flags, skipNextRefresh:', this.skipNextRefresh, 'now:', Date.now(), 'skipUntil:', this.skipRefreshUntil, 'isNavigating:', this.isNavigating);
+			return;
+		}
 
-		// Find text nodes and apply highlighting
-		const walker = document.createTreeWalker(
-			element,
-			NodeFilter.SHOW_TEXT, {
-				acceptNode: (node) => {
-					// Skip if parent is a script or style element
-					const parent = node.parentElement;
-					if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
-						return NodeFilter.FILTER_REJECT;
-					}
-					return NodeFilter.FILTER_ACCEPT;
+		this.debug('Proceeding with footnotes view refresh');
+		const leaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		leaves.forEach(leaf => {
+			if (leaf.view instanceof FootnotesView) {
+				(leaf.view as any).skipCheckTimestamp = Date.now();
+				(leaf.view as any).lastRefreshCheck = Date.now();
+				leaf.view.refresh();
+			}
+		});
+	}
+
+	// NEW: Enhanced extractFootnotes method that separates referenced and unreferenced footnotes
+	extractFootnotesWithUnreferenced(content: string): {
+		referencedFootnotes: FootnoteData[],
+		unreferencedFootnotes: FootnoteData[]
+	} {
+		const footnoteDefinitions = new Map < string,
+			FootnoteDefinition > ();
+		const footnoteReferences = new Map < string,
+			FootnoteReference[] > ();
+
+		// Extract footnote definitions first
+		const definitionRegex = /^\[\^([\w-]+)\]:\s*(.*)$/gm;
+		let match;
+		while ((match = definitionRegex.exec(content)) !== null) {
+			const number = match[1];
+			const contentText = match[2];
+			const startPos = match.index;
+			const endPos = match.index + match[0].length;
+
+			const beforeDefinition = content.substring(0, startPos);
+			const line = (beforeDefinition.match(/\n/g) || []).length;
+
+			const definition: FootnoteDefinition = {
+				number,
+				content: contentText,
+				line,
+				startPos,
+				endPos,
+				fullMatch: match[0]
+			};
+
+			footnoteDefinitions.set(number, definition);
+		}
+
+		// Extract footnote references
+		const referenceRegex = /\[\^([\w-]+)\]/g;
+		while ((match = referenceRegex.exec(content)) !== null) {
+			const number = match[1];
+			const startPos = match.index;
+			const endPos = match.index + match[0].length;
+
+			// Check if this match is actually a definition by looking at the context
+			const beforeMatch = content.substring(Math.max(0, startPos - 10), startPos);
+			const afterMatch = content.substring(endPos, endPos + 2);
+
+			const lineStart = beforeMatch.lastIndexOf('\n');
+			const textBeforeOnLine = lineStart >= 0 ? beforeMatch.substring(lineStart + 1) : beforeMatch;
+
+			if (textBeforeOnLine.trim() === '' && afterMatch.startsWith(':')) {
+				this.debug('Skipping footnote definition (not a reference):', match[0]);
+				continue;
+			}
+
+			const beforeReference = content.substring(0, startPos);
+			const line = (beforeReference.match(/\n/g) || []).length;
+
+			const reference: FootnoteReference = {
+				number,
+				line,
+				startPos,
+				endPos,
+				fullMatch: match[0]
+			};
+
+			if (!footnoteReferences.has(number)) {
+				footnoteReferences.set(number, []);
+			}
+			footnoteReferences.get(number) !.push(reference);
+		}
+
+		// Separate referenced and unreferenced footnotes
+		const referencedFootnotes: FootnoteData[] = [];
+		const unreferencedFootnotes: FootnoteData[] = [];
+
+		footnoteDefinitions.forEach((definition, number) => {
+			const references = footnoteReferences.get(number) || [];
+			const footnoteData: FootnoteData = {
+				number,
+				content: definition.content,
+				definition,
+				references,
+				referenceCount: references.length,
+				isUnreferenced: references.length === 0
+			};
+
+			if (references.length === 0) {
+				unreferencedFootnotes.push(footnoteData);
+			} else {
+				referencedFootnotes.push(footnoteData);
+			}
+		});
+
+		this.debug('Extracted footnotes:', {
+			referenced: referencedFootnotes.length,
+			unreferenced: unreferencedFootnotes.length
+		});
+
+		return {
+			referencedFootnotes,
+			unreferencedFootnotes
+		};
+	}
+
+	// Keep the original method for backward compatibility
+	extractFootnotes(content: string): FootnoteData[] {
+		const {
+			referencedFootnotes,
+			unreferencedFootnotes
+		} = this.extractFootnotesWithUnreferenced(content);
+		return [...referencedFootnotes, ...unreferencedFootnotes];
+	}
+
+	// NEW: Method to find orphaned references (references without definitions)
+	findOrphanedReferences(content: string): OrphanedReference[] {
+		const footnoteDefinitions = new Set < string > ();
+		const orphanedReferences: OrphanedReference[] = [];
+
+		// First pass: collect all footnote definition numbers
+		const definitionRegex = /^\[\^([\w-]+)\]:\s*(.*)$/gm;
+		let match;
+		while ((match = definitionRegex.exec(content)) !== null) {
+			footnoteDefinitions.add(match[1]);
+		}
+
+		// Second pass: find references without definitions
+		const referenceRegex = /\[\^([\w-]+)\]/g;
+		while ((match = referenceRegex.exec(content)) !== null) {
+			const number = match[1];
+			const startPos = match.index;
+			const endPos = match.index + match[0].length;
+
+			// Skip if this is actually a definition
+			const beforeMatch = content.substring(Math.max(0, startPos - 10), startPos);
+			const afterMatch = content.substring(endPos, endPos + 2);
+			const lineStart = beforeMatch.lastIndexOf('\n');
+			const textBeforeOnLine = lineStart >= 0 ? beforeMatch.substring(lineStart + 1) : beforeMatch;
+
+			if (textBeforeOnLine.trim() === '' && afterMatch.startsWith(':')) {
+				continue;
+			}
+
+			// Check if this reference has no corresponding definition
+			if (!footnoteDefinitions.has(number)) {
+				const beforeReference = content.substring(0, startPos);
+				const line = (beforeReference.match(/\n/g) || []).length;
+
+				orphanedReferences.push({
+					number,
+					line,
+					startPos,
+					endPos,
+					fullMatch: match[0]
+				});
+			}
+		}
+
+		return orphanedReferences;
+	}
+
+	extractHeaders(content: string): HeaderData[] {
+		const lines = content.split('\n');
+		const headers: HeaderData[] = [];
+		const headerRegex = /^(#{1,6})\s+(.+)$/;
+
+		lines.forEach((line: string, lineIndex: number) => {
+			const match = headerRegex.exec(line.trim());
+			if (match) {
+				headers.push({
+					text: match[2].trim(),
+					level: match[1].length,
+					line: lineIndex
+				});
+			}
+		});
+
+		return headers;
+	}
+
+	groupFootnotesByHeaders(footnotes: FootnoteData[], headers: HeaderData[]): FootnoteGroup[] {
+		this.allHeaders = headers;
+
+		const groups: FootnoteGroup[] = [];
+		const sortedHeaders = [...headers].sort((a, b) => a.line - b.line);
+
+		// Separate referenced and unreferenced footnotes
+		const referencedFootnotes = footnotes.filter(f => f.references.length > 0);
+		const unreferencedFootnotes = footnotes.filter(f => f.references.length === 0);
+
+		// Process referenced footnotes (existing logic)
+		referencedFootnotes.forEach(footnote => {
+			// Find the header for the first reference of this footnote
+			const firstRef = footnote.references[0];
+			if (!firstRef) return;
+
+			let nearestHeader: HeaderData | null = null;
+
+			for (let i = sortedHeaders.length - 1; i >= 0; i--) {
+				if (sortedHeaders[i].line < firstRef.line) {
+					nearestHeader = sortedHeaders[i];
+					break;
 				}
 			}
-		);
 
-		const textNodes: Text[] = [];
-		let node;
+			let group = groups.find(g =>
+				(g.header === null && nearestHeader === null) ||
+				(g.header !== null && nearestHeader !== null && g.header.line === nearestHeader.line)
+			);
 
-		while (node = walker.nextNode()) {
-			textNodes.push(node as Text);
+			if (!group) {
+				group = {
+					header: nearestHeader,
+					footnotes: []
+				};
+				groups.push(group);
+			}
+
+			group.footnotes.push(footnote);
+		});
+
+		// Add unreferenced footnotes to a special "Unreferenced" group
+		if (unreferencedFootnotes.length > 0) {
+			const unreferencedGroup: FootnoteGroup = {
+				header: {
+					text: "Unreferenced Footnotes",
+					level: 1, // Make it a top-level heading
+					line: -1 // Special line number to indicate it's virtual
+				},
+				footnotes: unreferencedFootnotes
+			};
+			groups.push(unreferencedGroup);
 		}
 
-		textNodes.forEach(textNode => {
-			const text = textNode.textContent || '';
-			const lowerText = text.toLowerCase();
-			const lowerSearchTerm = searchTerm.toLowerCase();
+		// Sort footnotes within each group by number
+		groups.forEach(group => {
+			group.footnotes.sort((a, b) => {
+				const aNum = parseInt(a.number);
+				const bNum = parseInt(b.number);
+				if (isNaN(aNum) || isNaN(bNum)) {
+					return a.number.localeCompare(b.number);
+				}
+				return aNum - bNum;
+			});
+		});
 
-			if (lowerText.includes(lowerSearchTerm)) {
-				const highlightedHTML = this.highlightSearchText(text, searchTerm);
-				const span = document.createElement('span');
-				span.innerHTML = highlightedHTML;
-				textNode.replaceWith(span);
+		// Sort groups by header line (unreferenced group goes last)
+		groups.sort((a, b) => {
+			if (a.header === null && b.header === null) return 0;
+			if (a.header === null) return -1;
+			if (b.header === null) return 1;
+
+			// Put unreferenced group at the end
+			if (a.header.line === -1) return 1;
+			if (b.header.line === -1) return -1;
+
+			return a.header.line - b.header.line;
+		});
+
+		return this.buildHierarchicalGroups(groups);
+	}
+
+	private buildHierarchicalGroups(flatGroups: FootnoteGroup[]): FootnoteGroup[] {
+		const footnoteGroupsByHeaderLine = new Map < number,
+			FootnoteGroup > ();
+		let noHeaderGroup: FootnoteGroup | null = null;
+		let unreferencedGroup: FootnoteGroup | null = null;
+
+		flatGroups.forEach((group: FootnoteGroup) => {
+			if (group.header) {
+				if (group.header.line === -1) {
+					// This is the unreferenced group
+					unreferencedGroup = group;
+				} else {
+					footnoteGroupsByHeaderLine.set(group.header.line, group);
+				}
+			} else {
+				noHeaderGroup = group;
 			}
 		});
-	}
-	
-	// ADD this new method to FootnotesView class
-	private refreshCurrentFileReference() {
-	    this.debug('Refreshing current file reference before navigation');
-    
-	    // Update currentFile to the most recent active file
-	    const activeFile = this.app.workspace.getActiveFile();
-	    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    
-	    if (activeView && activeView.file) {
-	        this.currentFile = activeView.file;
-	        this.debug('Updated currentFile to active view file:', this.currentFile?.path);
-	    } else if (activeFile) {
-	        this.currentFile = activeFile;
-	        this.debug('Updated currentFile to active file:', this.currentFile?.path);
-	    }
+
+		const allGroups: FootnoteGroup[] = [];
+
+		if (noHeaderGroup) {
+			allGroups.push(noHeaderGroup);
+		}
+
+		const sortedHeaders = this.allHeaders.sort((a: HeaderData, b: HeaderData) => a.line - b.line);
+
+		sortedHeaders.forEach((header: HeaderData) => {
+			const existingGroup = footnoteGroupsByHeaderLine.get(header.line);
+			if (existingGroup) {
+				allGroups.push(existingGroup);
+			} else {
+				allGroups.push({
+					header: header,
+					footnotes: []
+				});
+			}
+		});
+
+		// Add unreferenced group at the end
+		if (unreferencedGroup) {
+			allGroups.push(unreferencedGroup);
+		}
+
+		const result: FootnoteGroup[] = [];
+		const stack: FootnoteGroup[] = [];
+
+		for (const group of allGroups) {
+			if (!group.header) {
+				result.push(group);
+				continue;
+			}
+
+			// Handle the special unreferenced group
+			if (group.header.line === -1) {
+				result.push(group);
+				continue;
+			}
+
+			while (stack.length > 0 && stack[stack.length - 1].header!.level >= group.header.level) {
+				stack.pop();
+			}
+
+			if (stack.length > 0) {
+				const parent = stack[stack.length - 1];
+				if (!parent.children) {
+					parent.children = [];
+				}
+				parent.children.push(group);
+				group.parent = parent;
+			} else {
+				result.push(group);
+			}
+
+			stack.push(group);
+		}
+
+		return result;
 	}
 
-	private expandSectionContaining(footnoteElement: HTMLElement) {
-	    this.debug('Expanding section containing footnote');
-    
-	    // Find the parent group section
-	    let currentElement: HTMLElement | null = footnoteElement;
-    
-	    while (currentElement && currentElement !== this.containerEl) {
-	        // Look for footnote group content containers
-	        if (currentElement.classList.contains('footnote-group-content')) {
-	            // Check if this section is collapsed
-	            if (currentElement.style.display === 'none') {
-	                this.debug('Found collapsed section, expanding it');
-                
-	                // Show the content
-	                currentElement.style.display = 'block';
-                
-	                // Find the corresponding collapse icon and update it
-	                const headerSection = currentElement.parentElement;
-	                if (headerSection) {
-	                    const collapseIcon = headerSection.querySelector('.footnote-collapse-icon');
-	                    if (collapseIcon) {
-	                        // Update the icon to show expanded state
-	                        const iconEl = collapseIcon.querySelector('svg');
-	                        if (iconEl) {
-	                            // Clear existing icon and set chevron-down
-	                            iconEl.innerHTML = `<path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-	                        }
-	                    }
-	                }
-                
-	                // Update the group's collapsed state in the rendered groups
-	                this.renderedGroups.forEach(rendered => {
-	                    if (rendered.contentElement === currentElement) {
-	                        rendered.group.isCollapsed = false;
-	                        this.hasManualExpansions = true;
-	                        this.debug('Updated group collapsed state');
-	                    }
-	                });
-	            }
-	        }
-        
-	        currentElement = currentElement.parentElement as HTMLElement;
-	    }
+	highlightFootnoteInEditor(footnote: FootnoteData, referenceIndex: number = 0) {
+		this.debug('=== highlightFootnoteInEditor START ===');
+		this.debug('footnote:', footnote.number, 'referenceIndex:', referenceIndex);
+
+		// Get the file that the footnotes panel is currently showing
+		const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		let targetFile: TFile | null = null;
+
+		this.debug('Found footnote leaves:', footnoteLeaves.length);
+
+		if (footnoteLeaves.length > 0) {
+			const footnoteView = footnoteLeaves[0].view as FootnotesView;
+			targetFile = (footnoteView as any).currentFile;
+			this.debug('Panel currentFile:', targetFile?.path);
+		}
+
+		// Fallback to active file if panel doesn't have a file
+		if (!targetFile) {
+			targetFile = this.app.workspace.getActiveFile();
+			this.debug('Fallback to active file:', targetFile?.path);
+		}
+
+		if (!targetFile) {
+			new Notice('No active markdown file found');
+			this.debug('No target file found');
+			return;
+		}
+
+		this.debug('Final target file:', targetFile.path);
+
+		// Find the editor for this file
+		const leaves = this.app.workspace.getLeavesOfType('markdown');
+		this.debug('Searching through', leaves.length, 'markdown leaves');
+
+		let targetEditor: Editor | null = null;
+		let targetLeaf: WorkspaceLeaf | null = null;
+
+		for (const leaf of leaves) {
+			const view = leaf.view as MarkdownView;
+			this.debug('Checking leaf with file:', view.file?.path);
+
+			if (view.file === targetFile) {
+				targetEditor = view.editor;
+				targetLeaf = leaf;
+				this.debug('FOUND matching editor for:', targetFile.path);
+				break;
+			}
+		}
+
+		if (!targetEditor || !targetLeaf) {
+			new Notice('Could not find editor for footnote navigation');
+			this.debug('No matching editor found');
+			return;
+		}
+
+		// Make sure the target leaf is active (this prevents focus issues)
+		this.app.workspace.setActiveLeaf(targetLeaf);
+		this.debug('Making target leaf active');
+
+		// Get current content and extract footnotes
+		const content = targetEditor.getValue();
+		this.debug('Got content, length:', content.length);
+
+		const footnotes = this.extractFootnotes(content);
+		this.debug('Extracted footnotes count:', footnotes.length);
+
+		const match = footnotes.find(f => f.number === footnote.number);
+		if (!match) {
+			new Notice(`Footnote [${footnote.number}] not found in current document`);
+			this.debug('Footnote not found in extracted footnotes');
+			return;
+		}
+
+		this.debug('Found footnote, references count:', match.references.length);
+
+		if (!match.references[referenceIndex]) {
+			new Notice(`Reference ${referenceIndex + 1} not found for footnote [${footnote.number}]`);
+			this.debug('Reference index out of bounds');
+			return;
+		}
+
+		const reference = match.references[referenceIndex];
+		this.debug('Using reference:', reference);
+
+		// Calculate cursor position more accurately
+		const beforeReference = content.substring(0, reference.startPos);
+		const startLine = (beforeReference.match(/\n/g) || []).length;
+		const lastNewlinePos = beforeReference.lastIndexOf('\n');
+		const referenceStartInLine = lastNewlinePos === -1 ? reference.startPos : reference.startPos - lastNewlinePos - 1;
+
+		const cursorPos = {
+			line: startLine,
+			ch: referenceStartInLine
+		};
+
+		this.debug('Calculated cursor position:', cursorPos);
+
+		// Set cursor and scroll
+		this.debug('Setting cursor...');
+		targetEditor.setCursor(cursorPos);
+
+		this.debug('Scrolling into view...');
+		targetEditor.scrollIntoView({
+			from: cursorPos,
+			to: cursorPos
+		}, true);
+
+		this.debug('Focusing editor...');
+		targetEditor.focus();
+
+		// FIXED: Always show the success notice immediately
+		const referenceNumber = referenceIndex + 1;
+		const totalReferences = match.references.length;
+		new Notice(`Jumped to footnote [${footnote.number}] reference ${referenceNumber}/${totalReferences} on line ${startLine + 1}`);
+
+		this.debug('Navigation completed successfully');
+		this.debug('=== highlightFootnoteInEditor END ===');
 	}
-	
-	// ADD ALL THE CURSOR TRACKING METHODS HERE:
+
+	highlightHeaderInEditor(header: HeaderData) {
+		this.debug('highlightHeaderInEditor called', header);
+
+		const file = this.app.workspace.getActiveFile();
+		if (!file) {
+			new Notice('No active markdown file');
+			return;
+		}
+
+		this.app.workspace.getLeaf().openFile(file).then(() => {
+			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!activeView) return;
+
+			const editor = activeView.editor;
+			const headers = this.extractHeaders(editor.getValue());
+			const match = headers.find(h => h.text === header.text && h.level === header.level);
+
+			if (!match) return;
+
+			editor.setCursor({
+				line: match.line,
+				ch: 0
+			});
+			editor.scrollIntoView({
+				from: {
+					line: match.line,
+					ch: 0
+				},
+				to: {
+					line: match.line,
+					ch: 0
+				}
+			}, true);
+		});
+	}
+
+	// NEW: Enhanced renumberFootnotes method
+	renumberFootnotes() {
+		this.debug('renumberFootnotes called');
+
+		// Get editor (existing logic)
+		let activeEditor: Editor | null = null;
+		let targetFile: TFile | null = null;
+
+		this.debug('Getting file from footnotes view');
+
+		const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		if (footnoteLeaves.length > 0) {
+			const footnoteView = footnoteLeaves[0].view as FootnotesView;
+			targetFile = (footnoteView as any).currentFile;
+			this.debug('Got target file from footnotes view:', !!targetFile);
+		}
+
+		if (targetFile) {
+			const leaves = this.app.workspace.getLeavesOfType('markdown');
+			for (const leaf of leaves) {
+				const view = leaf.view as MarkdownView;
+				if (view.file === targetFile) {
+					activeEditor = view.editor;
+					this.debug('Found editor for target file');
+					break;
+				}
+			}
+		}
+
+		if (!activeEditor) {
+			this.debug('Fallback: searching for any active view');
+			let activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+			if (!activeView) {
+				const leaves = this.app.workspace.getLeavesOfType('markdown');
+				if (leaves.length > 0) {
+					activeView = leaves[0].view as MarkdownView;
+				}
+			}
+
+			if (!activeView) {
+				new Notice('No markdown editor found. Please click in a markdown document first.');
+				return;
+			}
+
+			activeEditor = activeView.editor;
+		}
+
+		if (!activeEditor || typeof activeEditor.getValue !== 'function') {
+			this.debug('Editor is invalid or missing getValue method');
+			new Notice('Unable to access editor');
+			return;
+		}
+
+		try {
+			const content = activeEditor.getValue();
+			const footnotes = this.extractFootnotes(content);
+
+			if (footnotes.length === 0) {
+				new Notice('No footnotes found to process');
+				return;
+			}
+
+			// Check for gaps in numbering
+			const referencedFootnotes = footnotes.filter(f => f.references.length > 0);
+			const sortedNumbers = referencedFootnotes.map(f => parseInt(f.number)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+			const gaps: string[] = [];
+
+			for (let i = 1; i < sortedNumbers[sortedNumbers.length - 1]; i++) {
+				if (!sortedNumbers.includes(i)) {
+					gaps.push(i.toString());
+				}
+			}
+
+			// Check for unreferenced footnotes
+			const unreferencedFootnotes = footnotes.filter(f => f.references.length === 0);
+
+			// If no issues found
+			if (gaps.length === 0 && unreferencedFootnotes.length === 0) {
+				new Notice('No footnote issues found - numbering is sequential and all footnotes are referenced');
+				return;
+			}
+
+			// Show enhanced confirmation modal
+			new EnhancedRenumberConfirmationModal(
+				this.app,
+				this,
+				gaps,
+				unreferencedFootnotes,
+				(options: RenumberOptions) => {
+					this.performEnhancedRenumbering(activeEditor!, footnotes, options);
+				}
+			).open();
+
+		} catch (error) {
+			this.debug('Error in renumberFootnotes:', error);
+			new Notice('Error accessing document: ' + error.message);
+		}
+	}
+
+	private performEnhancedRenumbering(editor: Editor, footnotes: FootnoteData[], options: RenumberOptions) {
+		let content = editor.getValue();
+		let processedFootnotes = [...footnotes];
+
+		// Step 1: Remove unreferenced footnotes if requested
+		if (options.removeUnreferenced) {
+			const unreferencedFootnotes = processedFootnotes.filter(f => f.references.length === 0);
+
+			// Sort by position (descending) to maintain positions during deletion
+			const sortedForDeletion = unreferencedFootnotes.sort((a, b) => b.definition.startPos - a.definition.startPos);
+
+			// Remove unreferenced footnote definitions
+			sortedForDeletion.forEach(footnote => {
+				const before = content.substring(0, footnote.definition.startPos);
+				const after = content.substring(footnote.definition.endPos);
+				content = before + after;
+
+				// Adjust positions of remaining footnotes
+				const positionChange = footnote.definition.endPos - footnote.definition.startPos;
+				processedFootnotes.forEach(remaining => {
+					if (remaining.definition.startPos > footnote.definition.startPos) {
+						remaining.definition.startPos -= positionChange;
+						remaining.definition.endPos -= positionChange;
+					}
+					remaining.references.forEach(ref => {
+						if (ref.startPos > footnote.definition.startPos) {
+							ref.startPos -= positionChange;
+							ref.endPos -= positionChange;
+						}
+					});
+				});
+			});
+
+			// Remove unreferenced footnotes from our working set
+			processedFootnotes = processedFootnotes.filter(f => f.references.length > 0);
+
+			// Update the content for further processing
+			editor.setValue(content);
+			content = editor.getValue();
+
+			// Re-extract footnotes to get accurate positions after deletion
+			processedFootnotes = this.extractFootnotes(content);
+		}
+
+		// Step 2: Fix gaps if requested
+		if (options.fixGaps && processedFootnotes.length > 0) {
+			// Sort footnotes by their first reference position to maintain order
+			const sortedFootnotes = [...processedFootnotes].sort((a, b) => {
+				const aFirstRef = a.references[0];
+				const bFirstRef = b.references[0];
+				if (!aFirstRef || !bFirstRef) return 0;
+				return aFirstRef.startPos - bFirstRef.startPos;
+			});
+
+			// Create mapping from old numbers to new numbers
+			const numberMapping = new Map < string,
+				string > ();
+			sortedFootnotes.forEach((footnote, index) => {
+				numberMapping.set(footnote.number, (index + 1).toString());
+			});
+
+			// Replace all references and definitions (work backwards to maintain positions)
+			const allReplacements: Array < {
+				startPos: number,
+				endPos: number,
+				newText: string
+			} > = [];
+
+			// Collect all replacements
+			processedFootnotes.forEach(footnote => {
+				const newNumber = numberMapping.get(footnote.number);
+				if (!newNumber) return;
+
+				// Add definition replacement
+				allReplacements.push({
+					startPos: footnote.definition.startPos,
+					endPos: footnote.definition.endPos,
+					newText: `[^${newNumber}]: ${footnote.definition.content}`
+				});
+
+				// Add reference replacements
+				footnote.references.forEach(ref => {
+					allReplacements.push({
+						startPos: ref.startPos,
+						endPos: ref.endPos,
+						newText: `[^${newNumber}]`
+					});
+				});
+			});
+
+			// Sort replacements by position (descending) to maintain positions
+			allReplacements.sort((a, b) => b.startPos - a.startPos);
+
+			// Apply replacements
+			allReplacements.forEach(replacement => {
+				const before = content.substring(0, replacement.startPos);
+				const after = content.substring(replacement.endPos);
+				content = before + replacement.newText + after;
+			});
+
+			editor.setValue(content);
+		}
+
+		// Provide feedback
+		let message = 'Footnote processing completed:';
+		const actions: string[] = [];
+
+		if (options.removeUnreferenced) {
+			const unreferencedCount = footnotes.filter(f => f.references.length === 0).length;
+			actions.push(`${unreferencedCount} unreferenced footnote(s) removed`);
+		}
+
+		if (options.fixGaps) {
+			actions.push('footnote numbering gaps fixed');
+		}
+
+		if (actions.length > 0) {
+			message += ' ' + actions.join(', ');
+		}
+
+		new Notice(message);
+		this.refreshFootnotesView();
+	}
+
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+	private handleCursorPositionChange(editor: Editor) {
+		this.debug('handleCursorPositionChange called');
+
+		if (this.cursorCheckTimeout) {
+			window.clearTimeout(this.cursorCheckTimeout);
+		}
+
+		this.cursorCheckTimeout = window.setTimeout(() => {
+			this.checkCursorInFootnoteReference();
+		}, 200);
+	}
+
+	public checkCursorInFootnoteReference() {
+		this.debug('checkCursorInFootnoteReference called');
+
+		if (this.cursorCheckInProgress) {
+			this.debug('Cursor check already in progress, skipping');
+			return;
+		}
+
+		this.cursorCheckInProgress = true;
+
+		try {
+			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!activeView) {
+				this.debug('No active markdown view found');
+				return;
+			}
+
+			const editor = activeView.editor;
+			const cursor = editor.getCursor();
+			const line = editor.getLine(cursor.line);
+
+			this.debug('Cursor position:', cursor, 'Line content:', line, 'Cursor ch:', cursor.ch);
+
+			const footnoteRegex = /\[\^([\w-]+)\]/g;
+			let match;
+			let currentFootnote: string | null = null;
+
+			while ((match = footnoteRegex.exec(line)) !== null) {
+				const startPos = match.index;
+				const endPos = match.index + match[0].length;
+
+				this.debug('Found footnote reference:', match[0], 'at positions', startPos, '-', endPos);
+
+				if (cursor.ch >= startPos && cursor.ch <= endPos) {
+					currentFootnote = match[1];
+					this.debug('Cursor is within footnote reference:', currentFootnote);
+					break;
+				}
+			}
+
+			if (currentFootnote && currentFootnote !== this.lastCheckedFootnote) {
+				this.debug('jumpToFootnoteInPanel called for footnote:', currentFootnote);
+				this.lastCheckedFootnote = currentFootnote;
+
+				const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+				this.debug('Found footnote view leaves:', footnoteLeaves.length);
+
+				if (footnoteLeaves.length > 0) {
+					const footnoteView = footnoteLeaves[0].view as FootnotesView;
+					footnoteView.jumpToFootnote(currentFootnote);
+				}
+			} else if (!currentFootnote) {
+				this.debug('No footnote reference found at cursor position');
+				this.lastCheckedFootnote = null;
+			}
+		} finally {
+			setTimeout(() => {
+				this.cursorCheckInProgress = false;
+			}, 50);
+		}
+	}
+
+	private jumpToFootnoteInPanel(footnoteNumber: string) {
+		this.debug('jumpToFootnoteInPanel called for footnote:', footnoteNumber);
+
+		const leaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		this.debug('Found footnote view leaves:', leaves.length);
+
+		if (leaves.length === 0) return;
+
+		const footnoteView = leaves[0].view as FootnotesView;
+		footnoteView.jumpToFootnote(footnoteNumber);
+	}
+
 	private setupCursorListener() {
 		this.debug('Setting up cursor listener');
-	
-		// Clean up existing listener
-		if (this.cursorListener) {
-			this.removeCursorListener();
-		}
 
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!activeView) {
@@ -1981,272 +2690,570 @@ class FootnotesView extends ItemView {
 			return;
 		}
 
-		const editorElement = activeView.contentEl.querySelector('.cm-editor .cm-scroller');
-		if (!editorElement) {
-			this.debug('No editor element found');
+		const editor = activeView.editor;
+		const editorEl = (editor as any).cm?.dom || (editor as any).containerEl;
+
+		if (!editorEl) {
+			this.debug('Could not find editor element');
 			return;
 		}
 
 		this.debug('Found editor element, adding click and keyup listeners');
 
-		// Create throttled cursor handler
-		this.cursorListener = this.throttle(() => {
-			this.handleCursorPositionChange();
-		}, this.cursorThrottleDelay);
+		// Remove existing listeners to prevent duplicates
+		editorEl.removeEventListener('click', this.handleCursorEvent);
+		editorEl.removeEventListener('keyup', this.handleCursorEvent);
 
-		// Add event listeners for cursor position changes
-		editorElement.addEventListener('click', this.cursorListener);
-		editorElement.addEventListener('keyup', this.cursorListener);
+		// Add new listeners
+		editorEl.addEventListener('click', this.handleCursorEvent);
+		editorEl.addEventListener('keyup', this.handleCursorEvent);
 	}
 
-	private removeCursorListener() {
-		if (!this.cursorListener) return;
+	private handleCursorEvent = () => {
+		this.debug('Cursor event triggered');
 
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (activeView) {
-			const editorElement = activeView.contentEl.querySelector('.cm-editor .cm-scroller');
-			if (editorElement) {
-				editorElement.removeEventListener('click', this.cursorListener);
-				editorElement.removeEventListener('keyup', this.cursorListener);
-			}
-		}
-		this.cursorListener = undefined;
+		if (!activeView) return;
+
+		this.handleCursorPositionChange(activeView.editor);
+	}
+}
+
+// Settings tab class
+class FootnotesManagerSettingTab extends PluginSettingTab {
+	plugin: FootnotesManagerPlugin;
+
+	constructor(app: App, plugin: FootnotesManagerPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
 	}
 
-	private handleCursorPositionChange() {
-		this.debug('handleCursorPositionChange called');
-	
-		// Prevent overlapping cursor processing
-		if (this.isProcessingCursor) {
-			this.debug('Cursor processing already in progress, skipping');
-			return;
-		}
-	
-		const now = Date.now();
-		if (now - this.lastCursorCheck < this.cursorThrottleDelay) {
-			return; // Throttle rapid cursor changes
-		}
-	
-		this.isProcessingCursor = true;
-		this.lastCursorCheck = now;
+	display(): void {
+		const {
+			containerEl
+		} = this;
 
-		try {
-			this.plugin.checkCursorInFootnoteReference();
-		} finally {
-			// Reset processing flag after a short delay
-			setTimeout(() => {
-				this.isProcessingCursor = false;
-			}, 100);
-		}
+		containerEl.empty();
+
+		containerEl.createEl('h2', {
+			text: 'Footnotes Manager Settings'
+		});
+
+		new Setting(containerEl)
+			.setName('Open panel on startup')
+			.setDesc('Automatically open the footnotes panel when Obsidian starts')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.openOnStart)
+				.onChange(async (value) => {
+					this.plugin.settings.openOnStart = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Default collapsed view')
+			.setDesc('Start with footnotes panel in collapsed state (showing only headers)')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.defaultCollapsed)
+				.onChange(async (value) => {
+					this.plugin.settings.defaultCollapsed = value;
+					await this.plugin.saveSettings();
+					this.plugin.refreshFootnotesView();
+				}));
+
+		new Setting(containerEl)
+			.setName('Debug mode')
+			.setDesc('Enable debug logging in the developer console (for troubleshooting)')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.debugMode)
+				.onChange(async (value) => {
+					this.plugin.settings.debugMode = value;
+					await this.plugin.saveSettings();
+				}));
+
+		// Usage Instructions
+		const instructionsEl = containerEl.createEl('div', {
+			cls: 'footnotes-instructions'
+		});
+		instructionsEl.createEl('h3', {
+			text: 'How to use Footnotes Manager:'
+		});
+		const instructionsList = instructionsEl.createEl('ol');
+		instructionsList.createEl('li', {
+			text: 'Click the hash (⌗) icon in the ribbon or use the command palette to toggle the footnotes panel'
+		});
+		instructionsList.createEl('li', {
+			text: 'Switch between outline view (grouped by headers) and list view using the view toggle button'
+		});
+		instructionsList.createEl('li', {
+			text: 'Click on footnote content to edit it inline (referenced footnotes only)'
+		});
+		instructionsList.createEl('li', {
+			text: 'Use the reference buttons to jump to specific footnote references in the text'
+		});
+		instructionsList.createEl('li', {
+			text: 'Delete footnotes safely - unreferenced footnotes delete only the definition'
+		});
+		instructionsList.createEl('li', {
+			text: 'Use the enhanced renumber button to remove orphaned references and fill gaps'
+		});
+		instructionsList.createEl('li', {
+			text: 'Unreferenced footnotes appear in a special "Unreferenced" section in outline view'
+		});
+	}
+} // ADD: New method to filter and render list view with search
+private filterAndRenderListView(footnotes: FootnoteData[], container: Element, searchTerm: string) {
+	this.debug('Filtering list view with search term:', searchTerm);
+
+	let filteredFootnotes = footnotes;
+
+	if (searchTerm) {
+		filteredFootnotes = footnotes.filter(footnote =>
+			footnote.content.toLowerCase().includes(searchTerm) ||
+			footnote.number.toLowerCase().includes(searchTerm)
+		);
+
+		this.debug('Filtered to', filteredFootnotes.length, 'footnotes');
 	}
 
-	private throttle<T extends (...args: any[]) => any>(func: T, delay: number): T {
-		let timeoutId: number | null = null;
-		let lastExecTime = 0;
-	
-		return ((...args: any[]) => {
-			const now = Date.now();
-		
-			if (now - lastExecTime >= delay) {
-				func(...args);
-				lastExecTime = now;
-			} else {
-				if (timeoutId) {
-					window.clearTimeout(timeoutId);
+	if (filteredFootnotes.length === 0 && searchTerm) {
+		container.createEl('div', {
+			text: 'No matching footnotes found',
+			cls: 'footnotes-empty'
+		});
+		return;
+	}
+
+	// Sort footnotes by their first reference position (document order)
+	const sortedFootnotes = [...filteredFootnotes].sort((a, b) => {
+		const aFirstRef = a.references[0];
+		const bFirstRef = b.references[0];
+		if (!aFirstRef || !bFirstRef) return 0;
+		return aFirstRef.startPos - bFirstRef.startPos;
+	});
+
+	// Create list items with search highlighting
+	sortedFootnotes.forEach((footnote, index) => {
+		const footnoteContainer = container.createEl('div', {
+			cls: 'footnote-list-item'
+		});
+
+		// Add sequence number for list view
+		const sequenceEl = footnoteContainer.createEl('div', {
+			cls: 'footnote-sequence',
+			text: `${index + 1}.`
+		});
+
+		// Create the footnote element with search highlighting
+		this.createFootnoteElementWithSearch(footnote, footnoteContainer, searchTerm);
+	});
+
+	this.debug('List view rendered with search successfully');
+}
+
+// ADD: New method to create footnote element with search highlighting
+private createFootnoteElementWithSearch(footnote: FootnoteData, container: Element, searchTerm: string) {
+	// Store the search term for highlighting
+	(this as any).currentSearchTerm = searchTerm;
+
+	// Use existing createFootnoteElement method
+	this.createFootnoteElement(footnote, container);
+
+	// Apply search highlighting if there's a search term
+	if (searchTerm) {
+		const footnoteEl = container.querySelector('.footnote-item');
+		if (footnoteEl) {
+			this.highlightSearchInFootnoteElement(footnoteEl as HTMLElement, searchTerm);
+		}
+	}
+}
+
+// ADD: New method to highlight search terms in footnote elements
+private highlightSearchInFootnoteElement(element: HTMLElement, searchTerm: string) {
+	if (!searchTerm) return;
+
+	// Find text nodes and apply highlighting
+	const walker = document.createTreeWalker(
+		element,
+		NodeFilter.SHOW_TEXT, {
+			acceptNode: (node) => {
+				// Skip if parent is a script or style element
+				const parent = node.parentElement;
+				if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+					return NodeFilter.FILTER_REJECT;
 				}
-				timeoutId = window.setTimeout(() => {
-					func(...args);
-					lastExecTime = Date.now();
-					timeoutId = null;
-				}, delay - (now - lastExecTime));
+				return NodeFilter.FILTER_ACCEPT;
 			}
-		}) as T;
+		}
+	);
+
+	const textNodes: Text[] = [];
+	let node;
+
+	while (node = walker.nextNode()) {
+		textNodes.push(node as Text);
 	}
 
-	private expandSectionContainingFootnote(footnoteEl: HTMLElement, callback?: () => void) {
-		this.debug('Expanding section containing footnote');
-	
-		const sectionsToExpand: Array<{element: HTMLElement, rendered: RenderedGroup}> = [];
-	
-		// Find all parent sections that might be collapsed
-		let currentElement: HTMLElement | null = footnoteEl;
-	
-		while (currentElement && currentElement !== this.containerEl) {
-			// Check if this is a collapsible content element
-			if (currentElement.classList.contains('footnote-group-content')) {
-				const groupHeader = currentElement.previousElementSibling;
-				if (groupHeader && groupHeader.classList.contains('footnote-header')) {
-					// Check if this section is collapsed
-					if (currentElement.style.display === 'none') {
-						this.debug('Found collapsed section, preparing to expand');
-					
-						// Find the corresponding group in our rendered groups
-						for (const rendered of this.renderedGroups) {
-							if (rendered.contentElement === currentElement) {
-								sectionsToExpand.push({element: currentElement, rendered});
-								break;
-							}
+	textNodes.forEach(textNode => {
+		const text = textNode.textContent || '';
+		const lowerText = text.toLowerCase();
+		const lowerSearchTerm = searchTerm.toLowerCase();
+
+		if (lowerText.includes(lowerSearchTerm)) {
+			const highlightedHTML = this.highlightSearchText(text, searchTerm);
+			const span = document.createElement('span');
+			span.innerHTML = highlightedHTML;
+			textNode.replaceWith(span);
+		}
+	});
+}
+
+// ADD this new method to FootnotesView class
+private refreshCurrentFileReference() {
+	this.debug('Refreshing current file reference before navigation');
+
+	// Update currentFile to the most recent active file
+	const activeFile = this.app.workspace.getActiveFile();
+	const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+	if (activeView && activeView.file) {
+		this.currentFile = activeView.file;
+		this.debug('Updated currentFile to active view file:', this.currentFile?.path);
+	} else if (activeFile) {
+		this.currentFile = activeFile;
+		this.debug('Updated currentFile to active file:', this.currentFile?.path);
+	}
+}
+
+private expandSectionContaining(footnoteElement: HTMLElement) {
+	this.debug('Expanding section containing footnote');
+
+	// Find the parent group section
+	let currentElement: HTMLElement | null = footnoteElement;
+
+	while (currentElement && currentElement !== this.containerEl) {
+		// Look for footnote group content containers
+		if (currentElement.classList.contains('footnote-group-content')) {
+			// Check if this section is collapsed
+			if (currentElement.style.display === 'none') {
+				this.debug('Found collapsed section, expanding it');
+
+				// Show the content
+				currentElement.style.display = 'block';
+
+				// Find the corresponding collapse icon and update it
+				const headerSection = currentElement.parentElement;
+				if (headerSection) {
+					const collapseIcon = headerSection.querySelector('.footnote-collapse-icon');
+					if (collapseIcon) {
+						// Update the icon to show expanded state
+						const iconEl = collapseIcon.querySelector('svg');
+						if (iconEl) {
+							// Clear existing icon and set chevron-down
+							iconEl.innerHTML = `<path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+						}
+					}
+				}
+
+				// Update the group's collapsed state in the rendered groups
+				this.renderedGroups.forEach(rendered => {
+					if (rendered.contentElement === currentElement) {
+						rendered.group.isCollapsed = false;
+						this.hasManualExpansions = true;
+						this.debug('Updated group collapsed state');
+					}
+				});
+			}
+		}
+
+		currentElement = currentElement.parentElement as HTMLElement;
+	}
+}
+
+// ADD ALL THE CURSOR TRACKING METHODS HERE:
+private setupCursorListener() {
+	this.debug('Setting up cursor listener');
+
+	// Clean up existing listener
+	if (this.cursorListener) {
+		this.removeCursorListener();
+	}
+
+	const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+	if (!activeView) {
+		this.debug('No active markdown view found');
+		return;
+	}
+
+	const editorElement = activeView.contentEl.querySelector('.cm-editor .cm-scroller');
+	if (!editorElement) {
+		this.debug('No editor element found');
+		return;
+	}
+
+	this.debug('Found editor element, adding click and keyup listeners');
+
+	// Create throttled cursor handler
+	this.cursorListener = this.throttle(() => {
+		this.handleCursorPositionChange();
+	}, this.cursorThrottleDelay);
+
+	// Add event listeners for cursor position changes
+	editorElement.addEventListener('click', this.cursorListener);
+	editorElement.addEventListener('keyup', this.cursorListener);
+}
+
+private removeCursorListener() {
+	if (!this.cursorListener) return;
+
+	const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+	if (activeView) {
+		const editorElement = activeView.contentEl.querySelector('.cm-editor .cm-scroller');
+		if (editorElement) {
+			editorElement.removeEventListener('click', this.cursorListener);
+			editorElement.removeEventListener('keyup', this.cursorListener);
+		}
+	}
+	this.cursorListener = undefined;
+}
+
+private handleCursorPositionChange() {
+	this.debug('handleCursorPositionChange called');
+
+	// Prevent overlapping cursor processing
+	if (this.isProcessingCursor) {
+		this.debug('Cursor processing already in progress, skipping');
+		return;
+	}
+
+	const now = Date.now();
+	if (now - this.lastCursorCheck < this.cursorThrottleDelay) {
+		return; // Throttle rapid cursor changes
+	}
+
+	this.isProcessingCursor = true;
+	this.lastCursorCheck = now;
+
+	try {
+		this.plugin.checkCursorInFootnoteReference();
+	} finally {
+		// Reset processing flag after a short delay
+		setTimeout(() => {
+			this.isProcessingCursor = false;
+		}, 100);
+	}
+}
+
+private throttle < T extends(...args: any[]) => any > (func: T, delay: number): T {
+	let timeoutId: number | null = null;
+	let lastExecTime = 0;
+
+	return ((...args: any[]) => {
+		const now = Date.now();
+
+		if (now - lastExecTime >= delay) {
+			func(...args);
+			lastExecTime = now;
+		} else {
+			if (timeoutId) {
+				window.clearTimeout(timeoutId);
+			}
+			timeoutId = window.setTimeout(() => {
+				func(...args);
+				lastExecTime = Date.now();
+				timeoutId = null;
+			}, delay - (now - lastExecTime));
+		}
+	}) as T;
+}
+
+private expandSectionContainingFootnote(footnoteEl: HTMLElement, callback ? : () => void) {
+	this.debug('Expanding section containing footnote');
+
+	const sectionsToExpand: Array < {
+		element: HTMLElement,
+		rendered: RenderedGroup
+	} > = [];
+
+	// Find all parent sections that might be collapsed
+	let currentElement: HTMLElement | null = footnoteEl;
+
+	while (currentElement && currentElement !== this.containerEl) {
+		// Check if this is a collapsible content element
+		if (currentElement.classList.contains('footnote-group-content')) {
+			const groupHeader = currentElement.previousElementSibling;
+			if (groupHeader && groupHeader.classList.contains('footnote-header')) {
+				// Check if this section is collapsed
+				if (currentElement.style.display === 'none') {
+					this.debug('Found collapsed section, preparing to expand');
+
+					// Find the corresponding group in our rendered groups
+					for (const rendered of this.renderedGroups) {
+						if (rendered.contentElement === currentElement) {
+							sectionsToExpand.push({
+								element: currentElement,
+								rendered
+							});
+							break;
 						}
 					}
 				}
 			}
-		
-			currentElement = currentElement.parentElement;
 		}
-	
-		// Expand sections from top to bottom (parent to child)
-		sectionsToExpand.reverse().forEach((section, index) => {
-			setTimeout(() => {
-				section.rendered.group.isCollapsed = false;
-				setIcon(section.rendered.collapseIcon as HTMLElement, 'chevron-down');
-				section.element.style.display = 'block';
-				this.hasManualExpansions = true;
-				this.debug('Updated group collapsed state');
-			
-				// Call callback after last expansion
-				if (index === sectionsToExpand.length - 1 && callback) {
-					callback();
-				}
-			}, index * 50); // Stagger expansions
-		});
-	
-		// If no sections to expand, call callback immediately
-		if (sectionsToExpand.length === 0 && callback) {
-			callback();
-		}
+
+		currentElement = currentElement.parentElement;
 	}
 
-	private scrollToFootnote(footnoteEl: HTMLElement) {
-		const container = this.containerEl.children[1];
-		const containerRect = container.getBoundingClientRect();
-		const footnoteRect = footnoteEl.getBoundingClientRect();
-	
-		// Calculate the scroll position to center the footnote in the view
-		const currentScroll = container.scrollTop;
-		const targetScroll = currentScroll + (footnoteRect.top - containerRect.top) - (containerRect.height / 3);
-	
-		this.debug('Scrolling container. Current scroll:', currentScroll, 'Target scroll:', targetScroll);
-	
-		container.scrollTo({
-			top: Math.max(0, targetScroll),
-			behavior: 'smooth'
-		});
-	}
-
-	private highlightFootnote(footnoteEl: HTMLElement) {
-		// Remove any existing highlights first
-		this.containerEl.querySelectorAll('.footnote-item-hover').forEach(el => {
-			el.classList.remove('footnote-item-hover');
-		});
-	
-		// Add highlight class
-		footnoteEl.classList.add('footnote-item-hover');
-	
-		// Remove highlight after a delay
+	// Expand sections from top to bottom (parent to child)
+	sectionsToExpand.reverse().forEach((section, index) => {
 		setTimeout(() => {
-			footnoteEl.classList.remove('footnote-item-hover');
-		}, 1500);
-	
-		this.debug('Highlighting applied, scroll initiated');
-	}
-	// ADD this new method to the FootnotesView class (around line 250-300)
-	// This replaces the existing jumpToFootnote method
+			section.rendered.group.isCollapsed = false;
+			setIcon(section.rendered.collapseIcon as HTMLElement, 'chevron-down');
+			section.element.style.display = 'block';
+			this.hasManualExpansions = true;
+			this.debug('Updated group collapsed state');
 
-	jumpToFootnote(footnoteNumber: string) {
-	    this.debug('FootnotesView.jumpToFootnote called for:', footnoteNumber);
-    
-	    // Find all footnote number elements
-	    const footnoteElements = this.containerEl.querySelectorAll('.footnote-number');
-	    this.debug('Found footnote elements:', footnoteElements.length);
-    
-	    let targetElement: Element | null = null;
-    
-	    // Search for the matching footnote number
-	    footnoteElements.forEach((element) => {
-	        const numberText = element.textContent?.trim();
-	        this.debug('Checking footnote number element:', numberText);
-        
-	        if (numberText === `[${footnoteNumber}]`) {
-	            this.debug('Found matching footnote, expanding section and scrolling');
-	            targetElement = element;
-	            return;
-	        }
-	    });
-    
-	    if (!targetElement) {
-	        this.debug('Footnote not found:', footnoteNumber);
-	        return;
-	    }
-    
-	    // Find the footnote item container
-	    const footnoteItem = targetElement.closest('.footnote-item');
-	    if (!footnoteItem) {
-	        this.debug('Could not find footnote item container');
-	        return;
-	    }
-    
-	    // Check if the footnote is in a collapsed section and expand it
-	    let currentElement = footnoteItem.parentElement;
-	    while (currentElement && currentElement !== this.containerEl) {
-	        if (currentElement.classList.contains('footnote-group-content')) {
-	            if (currentElement.style.display === 'none') {
-	                this.debug('Expanding section containing footnote');
-	                currentElement.style.display = 'block';
-                
-	                // Find and update the collapse icon
-	                const headerSection = currentElement.parentElement?.querySelector('.footnote-header');
-	                if (headerSection) {
-	                    const collapseIcon = headerSection.querySelector('.footnote-collapse-icon');
-	                    if (collapseIcon) {
-	                        // Update the icon to show expanded state
-	                        collapseIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
-	                    }
-	                }
-	            }
-	        }
-	        currentElement = currentElement.parentElement;
-	    }
-    
-	    // Get the scrollable container (the main footnotes panel container)
-	    const scrollContainer = this.containerEl.children[1]; // This should be the main content container
-    
-	    if (!scrollContainer) {
-	        this.debug('Could not find scroll container');
-	        return;
-	    }
-    
-	    // Calculate the scroll position
-	    const containerRect = scrollContainer.getBoundingClientRect();
-	    const footnoteRect = footnoteItem.getBoundingClientRect();
-    
-	    // Calculate the target scroll position
-	    // We need to account for the sticky header height
-	    const stickyHeader = this.containerEl.querySelector('.footnotes-header');
-	    const headerHeight = stickyHeader ? stickyHeader.getBoundingClientRect().height : 80;
-    
-	    // We want the footnote to appear below the sticky header, with some padding
-	    const currentScrollTop = scrollContainer.scrollTop;
-	    const relativeTop = footnoteRect.top - containerRect.top;
-	    const targetScrollTop = currentScrollTop + relativeTop - headerHeight - 20; // header height + 20px padding
-    
-	    this.debug('Scrolling container. Current scroll:', currentScrollTop, 'Target scroll:', targetScrollTop);
-    
-	    // Apply highlighting to the footnote
-	    footnoteItem.classList.add('footnote-item-hover');
-    
-	    // Perform the scroll with smooth behavior
-	    scrollContainer.scrollTo({
-	        top: Math.max(0, targetScrollTop), // Ensure we don't scroll to negative position
-	        behavior: 'smooth'
-	    });
-    
-	    this.debug('Highlighting applied, scroll initiated');
-    
-	    // Remove highlighting after a short delay
-	    setTimeout(() => {
-	        footnoteItem.classList.remove('footnote-item-hover');
-	    }, 2000);
+			// Call callback after last expansion
+			if (index === sectionsToExpand.length - 1 && callback) {
+				callback();
+			}
+		}, index * 50); // Stagger expansions
+	});
+
+	// If no sections to expand, call callback immediately
+	if (sectionsToExpand.length === 0 && callback) {
+		callback();
 	}
+}
+
+private scrollToFootnote(footnoteEl: HTMLElement) {
+	const container = this.containerEl.children[1];
+	const containerRect = container.getBoundingClientRect();
+	const footnoteRect = footnoteEl.getBoundingClientRect();
+
+	// Calculate the scroll position to center the footnote in the view
+	const currentScroll = container.scrollTop;
+	const targetScroll = currentScroll + (footnoteRect.top - containerRect.top) - (containerRect.height / 3);
+
+	this.debug('Scrolling container. Current scroll:', currentScroll, 'Target scroll:', targetScroll);
+
+	container.scrollTo({
+		top: Math.max(0, targetScroll),
+		behavior: 'smooth'
+	});
+}
+
+private highlightFootnote(footnoteEl: HTMLElement) {
+	// Remove any existing highlights first
+	this.containerEl.querySelectorAll('.footnote-item-hover').forEach(el => {
+		el.classList.remove('footnote-item-hover');
+	});
+
+	// Add highlight class
+	footnoteEl.classList.add('footnote-item-hover');
+
+	// Remove highlight after a delay
+	setTimeout(() => {
+		footnoteEl.classList.remove('footnote-item-hover');
+	}, 1500);
+
+	this.debug('Highlighting applied, scroll initiated');
+}
+
+jumpToFootnote(footnoteNumber: string) {
+	this.debug('FootnotesView.jumpToFootnote called for:', footnoteNumber);
+
+	// Find all footnote number elements
+	const footnoteElements = this.containerEl.querySelectorAll('.footnote-number');
+	this.debug('Found footnote elements:', footnoteElements.length);
+
+	let targetElement: Element | null = null;
+
+	// Search for the matching footnote number
+	footnoteElements.forEach((element) => {
+		const numberText = element.textContent?.trim();
+		this.debug('Checking footnote number element:', numberText);
+
+		if (numberText === `[${footnoteNumber}]`) {
+			this.debug('Found matching footnote, expanding section and scrolling');
+			targetElement = element;
+			return;
+		}
+	});
+
+	if (!targetElement) {
+		this.debug('Footnote not found:', footnoteNumber);
+		return;
+	}
+
+	// Find the footnote item container
+	const footnoteItem = targetElement.closest('.footnote-item');
+	if (!footnoteItem) {
+		this.debug('Could not find footnote item container');
+		return;
+	}
+
+	// Check if the footnote is in a collapsed section and expand it
+	let currentElement = footnoteItem.parentElement;
+	while (currentElement && currentElement !== this.containerEl) {
+		if (currentElement.classList.contains('footnote-group-content')) {
+			if (currentElement.style.display === 'none') {
+				this.debug('Expanding section containing footnote');
+				currentElement.style.display = 'block';
+
+				// Find and update the collapse icon
+				const headerSection = currentElement.parentElement?.querySelector('.footnote-header');
+				if (headerSection) {
+					const collapseIcon = headerSection.querySelector('.footnote-collapse-icon');
+					if (collapseIcon) {
+						// Update the icon to show expanded state
+						collapseIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
+					}
+				}
+			}
+		}
+		currentElement = currentElement.parentElement;
+	}
+
+	// Get the scrollable container (the main footnotes panel container)
+	const scrollContainer = this.containerEl.children[1]; // This should be the main content container
+
+	if (!scrollContainer) {
+		this.debug('Could not find scroll container');
+		return;
+	}
+
+	// Calculate the scroll position
+	const containerRect = scrollContainer.getBoundingClientRect();
+	const footnoteRect = footnoteItem.getBoundingClientRect();
+
+	// Calculate the target scroll position
+	// We need to account for the sticky header height
+	const stickyHeader = this.containerEl.querySelector('.footnotes-header');
+	const headerHeight = stickyHeader ? stickyHeader.getBoundingClientRect().height : 80;
+
+	// We want the footnote to appear below the sticky header, with some padding
+	const currentScrollTop = scrollContainer.scrollTop;
+	const relativeTop = footnoteRect.top - containerRect.top;
+	const targetScrollTop = currentScrollTop + relativeTop - headerHeight - 20; // header height + 20px padding
+
+	this.debug('Scrolling container. Current scroll:', currentScrollTop, 'Target scroll:', targetScrollTop);
+
+	// Apply highlighting to the footnote
+	footnoteItem.classList.add('footnote-item-hover');
+
+	// Perform the scroll with smooth behavior
+	scrollContainer.scrollTo({
+		top: Math.max(0, targetScrollTop), // Ensure we don't scroll to negative position
+		behavior: 'smooth'
+	});
+
+	this.debug('Highlighting applied, scroll initiated');
+
+	// Remove highlighting after a short delay
+	setTimeout(() => {
+		footnoteItem.classList.remove('footnote-item-hover');
+	}, 2000);
+}
 }
 
 export default class FootnotesManagerPlugin extends Plugin {
@@ -2345,15 +3352,15 @@ export default class FootnotesManagerPlugin extends Plugin {
 			});
 		}
 		this.registerEvent(
-		    this.app.workspace.on('active-leaf-change', () => {
-		        this.setupCursorListener();
-		    })
+			this.app.workspace.on('active-leaf-change', () => {
+				this.setupCursorListener();
+			})
 		);
 
 		// Also call it initially
 		this.app.workspace.onLayoutReady(() => {
-		    this.setupCursorListener();
-		});	
+			this.setupCursorListener();
+		});
 	}
 
 	insertFootnote(editor: Editor) {
@@ -3094,122 +4101,122 @@ export default class FootnotesManagerPlugin extends Plugin {
 	}
 
 	highlightFootnoteInEditor(footnote: FootnoteData, referenceIndex: number = 0) {
-	    this.debug('=== highlightFootnoteInEditor START ===');
-	    this.debug('footnote:', footnote.number, 'referenceIndex:', referenceIndex);
+		this.debug('=== highlightFootnoteInEditor START ===');
+		this.debug('footnote:', footnote.number, 'referenceIndex:', referenceIndex);
 
-	    // Get the file that the footnotes panel is currently showing
-	    const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
-	    let targetFile: TFile | null = null;
+		// Get the file that the footnotes panel is currently showing
+		const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		let targetFile: TFile | null = null;
 
-	    this.debug('Found footnote leaves:', footnoteLeaves.length);
+		this.debug('Found footnote leaves:', footnoteLeaves.length);
 
-	    if (footnoteLeaves.length > 0) {
-	        const footnoteView = footnoteLeaves[0].view as FootnotesView;
-	        targetFile = (footnoteView as any).currentFile;
-	        this.debug('Panel currentFile:', targetFile?.path);
-	    }
+		if (footnoteLeaves.length > 0) {
+			const footnoteView = footnoteLeaves[0].view as FootnotesView;
+			targetFile = (footnoteView as any).currentFile;
+			this.debug('Panel currentFile:', targetFile?.path);
+		}
 
-	    // Fallback to active file if panel doesn't have a file
-	    if (!targetFile) {
-	        targetFile = this.app.workspace.getActiveFile();
-	        this.debug('Fallback to active file:', targetFile?.path);
-	    }
+		// Fallback to active file if panel doesn't have a file
+		if (!targetFile) {
+			targetFile = this.app.workspace.getActiveFile();
+			this.debug('Fallback to active file:', targetFile?.path);
+		}
 
-	    if (!targetFile) {
-	        new Notice('No active markdown file found');
-	        this.debug('No target file found');
-	        return;
-	    }
+		if (!targetFile) {
+			new Notice('No active markdown file found');
+			this.debug('No target file found');
+			return;
+		}
 
-	    this.debug('Final target file:', targetFile.path);
+		this.debug('Final target file:', targetFile.path);
 
-	    // Find the editor for this file
-	    const leaves = this.app.workspace.getLeavesOfType('markdown');
-	    this.debug('Searching through', leaves.length, 'markdown leaves');
-    
-	    let targetEditor: Editor | null = null;
-	    let targetLeaf: WorkspaceLeaf | null = null;
+		// Find the editor for this file
+		const leaves = this.app.workspace.getLeavesOfType('markdown');
+		this.debug('Searching through', leaves.length, 'markdown leaves');
 
-	    for (const leaf of leaves) {
-	        const view = leaf.view as MarkdownView;
-	        this.debug('Checking leaf with file:', view.file?.path);
-        
-	        if (view.file === targetFile) {
-	            targetEditor = view.editor;
-	            targetLeaf = leaf;
-	            this.debug('FOUND matching editor for:', targetFile.path);
-	            break;
-	        }
-	    }
+		let targetEditor: Editor | null = null;
+		let targetLeaf: WorkspaceLeaf | null = null;
 
-	    if (!targetEditor || !targetLeaf) {
-	        new Notice('Could not find editor for footnote navigation');
-	        this.debug('No matching editor found');
-	        return;
-	    }
+		for (const leaf of leaves) {
+			const view = leaf.view as MarkdownView;
+			this.debug('Checking leaf with file:', view.file?.path);
 
-	    // Make sure the target leaf is active (this prevents focus issues)
-	    this.app.workspace.setActiveLeaf(targetLeaf);
-	    this.debug('Making target leaf active');
+			if (view.file === targetFile) {
+				targetEditor = view.editor;
+				targetLeaf = leaf;
+				this.debug('FOUND matching editor for:', targetFile.path);
+				break;
+			}
+		}
 
-	    // Get current content and extract footnotes
-	    const content = targetEditor.getValue();
-	    this.debug('Got content, length:', content.length);
-    
-	    const footnotes = this.extractFootnotes(content);
-	    this.debug('Extracted footnotes count:', footnotes.length);
+		if (!targetEditor || !targetLeaf) {
+			new Notice('Could not find editor for footnote navigation');
+			this.debug('No matching editor found');
+			return;
+		}
 
-	    const match = footnotes.find(f => f.number === footnote.number);
-	    if (!match) {
-	        new Notice(`Footnote [${footnote.number}] not found in current document`);
-	        this.debug('Footnote not found in extracted footnotes');
-	        return;
-	    }
+		// Make sure the target leaf is active (this prevents focus issues)
+		this.app.workspace.setActiveLeaf(targetLeaf);
+		this.debug('Making target leaf active');
 
-	    this.debug('Found footnote, references count:', match.references.length);
+		// Get current content and extract footnotes
+		const content = targetEditor.getValue();
+		this.debug('Got content, length:', content.length);
 
-	    if (!match.references[referenceIndex]) {
-	        new Notice(`Reference ${referenceIndex + 1} not found for footnote [${footnote.number}]`);
-	        this.debug('Reference index out of bounds');
-	        return;
-	    }
+		const footnotes = this.extractFootnotes(content);
+		this.debug('Extracted footnotes count:', footnotes.length);
 
-	    const reference = match.references[referenceIndex];
-	    this.debug('Using reference:', reference);
+		const match = footnotes.find(f => f.number === footnote.number);
+		if (!match) {
+			new Notice(`Footnote [${footnote.number}] not found in current document`);
+			this.debug('Footnote not found in extracted footnotes');
+			return;
+		}
 
-	    // Calculate cursor position more accurately
-	    const beforeReference = content.substring(0, reference.startPos);
-	    const startLine = (beforeReference.match(/\n/g) || []).length;
-	    const lastNewlinePos = beforeReference.lastIndexOf('\n');
-	    const referenceStartInLine = lastNewlinePos === -1 ? reference.startPos : reference.startPos - lastNewlinePos - 1;
+		this.debug('Found footnote, references count:', match.references.length);
 
-	    const cursorPos = {
-	        line: startLine,
-	        ch: referenceStartInLine
-	    };
+		if (!match.references[referenceIndex]) {
+			new Notice(`Reference ${referenceIndex + 1} not found for footnote [${footnote.number}]`);
+			this.debug('Reference index out of bounds');
+			return;
+		}
 
-	    this.debug('Calculated cursor position:', cursorPos);
+		const reference = match.references[referenceIndex];
+		this.debug('Using reference:', reference);
 
-	    // Set cursor and scroll
-	    this.debug('Setting cursor...');
-	    targetEditor.setCursor(cursorPos);
-    
-	    this.debug('Scrolling into view...');
-	    targetEditor.scrollIntoView({
-	        from: cursorPos,
-	        to: cursorPos
-	    }, true);
-    
-	    this.debug('Focusing editor...');
-	    targetEditor.focus();
+		// Calculate cursor position more accurately
+		const beforeReference = content.substring(0, reference.startPos);
+		const startLine = (beforeReference.match(/\n/g) || []).length;
+		const lastNewlinePos = beforeReference.lastIndexOf('\n');
+		const referenceStartInLine = lastNewlinePos === -1 ? reference.startPos : reference.startPos - lastNewlinePos - 1;
 
-	    // FIXED: Always show the success notice immediately
-	    const referenceNumber = referenceIndex + 1;
-	    const totalReferences = match.references.length;
-	    new Notice(`Jumped to footnote [${footnote.number}] reference ${referenceNumber}/${totalReferences} on line ${startLine + 1}`);
+		const cursorPos = {
+			line: startLine,
+			ch: referenceStartInLine
+		};
 
-	    this.debug('Navigation completed successfully');
-	    this.debug('=== highlightFootnoteInEditor END ===');
+		this.debug('Calculated cursor position:', cursorPos);
+
+		// Set cursor and scroll
+		this.debug('Setting cursor...');
+		targetEditor.setCursor(cursorPos);
+
+		this.debug('Scrolling into view...');
+		targetEditor.scrollIntoView({
+			from: cursorPos,
+			to: cursorPos
+		}, true);
+
+		this.debug('Focusing editor...');
+		targetEditor.focus();
+
+		// FIXED: Always show the success notice immediately
+		const referenceNumber = referenceIndex + 1;
+		const totalReferences = match.references.length;
+		new Notice(`Jumped to footnote [${footnote.number}] reference ${referenceNumber}/${totalReferences} on line ${startLine + 1}`);
+
+		this.debug('Navigation completed successfully');
+		this.debug('=== highlightFootnoteInEditor END ===');
 	}
 
 	highlightHeaderInEditor(header: HeaderData) {
@@ -3478,128 +4485,128 @@ export default class FootnotesManagerPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	
+
 	private handleCursorPositionChange(editor: Editor) {
-	    this.debug('handleCursorPositionChange called');
-    
-	    if (this.cursorCheckTimeout) {
-	        window.clearTimeout(this.cursorCheckTimeout);
-	    }
-    
-	    this.cursorCheckTimeout = window.setTimeout(() => {
-	        this.checkCursorInFootnoteReference();
-	    }, 200);
+		this.debug('handleCursorPositionChange called');
+
+		if (this.cursorCheckTimeout) {
+			window.clearTimeout(this.cursorCheckTimeout);
+		}
+
+		this.cursorCheckTimeout = window.setTimeout(() => {
+			this.checkCursorInFootnoteReference();
+		}, 200);
 	}
 
 	public checkCursorInFootnoteReference() {
-	    this.debug('checkCursorInFootnoteReference called');
-    
-	    if (this.cursorCheckInProgress) {
-	        this.debug('Cursor check already in progress, skipping');
-	        return;
-	    }
-    
-	    this.cursorCheckInProgress = true;
-    
-	    try {
-	        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-	        if (!activeView) {
-	            this.debug('No active markdown view found');
-	            return;
-	        }
+		this.debug('checkCursorInFootnoteReference called');
 
-	        const editor = activeView.editor;
-	        const cursor = editor.getCursor();
-	        const line = editor.getLine(cursor.line);
-        
-	        this.debug('Cursor position:', cursor, 'Line content:', line, 'Cursor ch:', cursor.ch);
+		if (this.cursorCheckInProgress) {
+			this.debug('Cursor check already in progress, skipping');
+			return;
+		}
 
-	        const footnoteRegex = /\[\^([\w-]+)\]/g;
-	        let match;
-	        let currentFootnote: string | null = null;
+		this.cursorCheckInProgress = true;
 
-	        while ((match = footnoteRegex.exec(line)) !== null) {
-	            const startPos = match.index;
-	            const endPos = match.index + match[0].length;
-            
-	            this.debug('Found footnote reference:', match[0], 'at positions', startPos, '-', endPos);
-            
-	            if (cursor.ch >= startPos && cursor.ch <= endPos) {
-	                currentFootnote = match[1];
-	                this.debug('Cursor is within footnote reference:', currentFootnote);
-	                break;
-	            }
-	        }
+		try {
+			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!activeView) {
+				this.debug('No active markdown view found');
+				return;
+			}
 
-	        if (currentFootnote && currentFootnote !== this.lastCheckedFootnote) {
-	            this.debug('jumpToFootnoteInPanel called for footnote:', currentFootnote);
-	            this.lastCheckedFootnote = currentFootnote;
-            
-	            const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
-	            this.debug('Found footnote view leaves:', footnoteLeaves.length);
-            
-	            if (footnoteLeaves.length > 0) {
-	                const footnoteView = footnoteLeaves[0].view as FootnotesView;
-	                footnoteView.jumpToFootnote(currentFootnote);
-	            }
-	        } else if (!currentFootnote) {
-	            this.debug('No footnote reference found at cursor position');
-	            this.lastCheckedFootnote = null;
-	        }
-	    } finally {
-	        setTimeout(() => {
-	            this.cursorCheckInProgress = false;
-	        }, 50);
-	    }
+			const editor = activeView.editor;
+			const cursor = editor.getCursor();
+			const line = editor.getLine(cursor.line);
+
+			this.debug('Cursor position:', cursor, 'Line content:', line, 'Cursor ch:', cursor.ch);
+
+			const footnoteRegex = /\[\^([\w-]+)\]/g;
+			let match;
+			let currentFootnote: string | null = null;
+
+			while ((match = footnoteRegex.exec(line)) !== null) {
+				const startPos = match.index;
+				const endPos = match.index + match[0].length;
+
+				this.debug('Found footnote reference:', match[0], 'at positions', startPos, '-', endPos);
+
+				if (cursor.ch >= startPos && cursor.ch <= endPos) {
+					currentFootnote = match[1];
+					this.debug('Cursor is within footnote reference:', currentFootnote);
+					break;
+				}
+			}
+
+			if (currentFootnote && currentFootnote !== this.lastCheckedFootnote) {
+				this.debug('jumpToFootnoteInPanel called for footnote:', currentFootnote);
+				this.lastCheckedFootnote = currentFootnote;
+
+				const footnoteLeaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+				this.debug('Found footnote view leaves:', footnoteLeaves.length);
+
+				if (footnoteLeaves.length > 0) {
+					const footnoteView = footnoteLeaves[0].view as FootnotesView;
+					footnoteView.jumpToFootnote(currentFootnote);
+				}
+			} else if (!currentFootnote) {
+				this.debug('No footnote reference found at cursor position');
+				this.lastCheckedFootnote = null;
+			}
+		} finally {
+			setTimeout(() => {
+				this.cursorCheckInProgress = false;
+			}, 50);
+		}
 	}
 
 	private jumpToFootnoteInPanel(footnoteNumber: string) {
-	    this.debug('jumpToFootnoteInPanel called for footnote:', footnoteNumber);
-    
-	    const leaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
-	    this.debug('Found footnote view leaves:', leaves.length);
-    
-	    if (leaves.length === 0) return;
-    
-	    const footnoteView = leaves[0].view as FootnotesView;
-	    footnoteView.jumpToFootnote(footnoteNumber);
+		this.debug('jumpToFootnoteInPanel called for footnote:', footnoteNumber);
+
+		const leaves = this.app.workspace.getLeavesOfType(FOOTNOTES_VIEW_TYPE);
+		this.debug('Found footnote view leaves:', leaves.length);
+
+		if (leaves.length === 0) return;
+
+		const footnoteView = leaves[0].view as FootnotesView;
+		footnoteView.jumpToFootnote(footnoteNumber);
 	}
-	
+
 	private setupCursorListener() {
-	    this.debug('Setting up cursor listener');
-    
-	    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-	    if (!activeView) {
-	        this.debug('No active markdown view found');
-	        return;
-	    }
-    
-	    const editor = activeView.editor;
-	    const editorEl = (editor as any).cm?.dom || (editor as any).containerEl;
-    
-	    if (!editorEl) {
-	        this.debug('Could not find editor element');
-	        return;
-	    }
-    
-	    this.debug('Found editor element, adding click and keyup listeners');
-    
-	    // Remove existing listeners to prevent duplicates
-	    editorEl.removeEventListener('click', this.handleCursorEvent);
-	    editorEl.removeEventListener('keyup', this.handleCursorEvent);
-    
-	    // Add new listeners
-	    editorEl.addEventListener('click', this.handleCursorEvent);
-	    editorEl.addEventListener('keyup', this.handleCursorEvent);
+		this.debug('Setting up cursor listener');
+
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) {
+			this.debug('No active markdown view found');
+			return;
+		}
+
+		const editor = activeView.editor;
+		const editorEl = (editor as any).cm?.dom || (editor as any).containerEl;
+
+		if (!editorEl) {
+			this.debug('Could not find editor element');
+			return;
+		}
+
+		this.debug('Found editor element, adding click and keyup listeners');
+
+		// Remove existing listeners to prevent duplicates
+		editorEl.removeEventListener('click', this.handleCursorEvent);
+		editorEl.removeEventListener('keyup', this.handleCursorEvent);
+
+		// Add new listeners
+		editorEl.addEventListener('click', this.handleCursorEvent);
+		editorEl.addEventListener('keyup', this.handleCursorEvent);
 	}
 
 	private handleCursorEvent = () => {
-	    this.debug('Cursor event triggered');
-    
-	    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-	    if (!activeView) return;
-    
-	    this.handleCursorPositionChange(activeView.editor);
+		this.debug('Cursor event triggered');
+
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!activeView) return;
+
+		this.handleCursorPositionChange(activeView.editor);
 	}
 }
 
