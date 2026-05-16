@@ -100,6 +100,7 @@ interface OrphanedReference {
 interface RenumberOptions {
 	fixGaps: boolean;
 	removeUnreferenced: boolean;
+	reorderByPosition: boolean;
 }
 
 // NEW: Enhanced Renumber Confirmation Modal
@@ -108,16 +109,19 @@ class EnhancedRenumberConfirmationModal extends Modal {
 	onConfirm: (options: RenumberOptions) => void;
 	gaps: string[];
 	unreferencedFootnotes: FootnoteData[];
+	isOutOfOrder: boolean;
 
 	// Checkbox states
 	private fixGapsCheckbox: HTMLInputElement | null = null;
 	private removeUnreferencedCheckbox: HTMLInputElement | null = null;
+	private reorderByPositionCheckbox: HTMLInputElement | null = null;
 
 	constructor(
 		app: App,
 		plugin: FootnotesManagerPlugin,
 		gaps: string[],
 		unreferencedFootnotes: FootnoteData[],
+		isOutOfOrder: boolean,
 		onConfirm: (options: RenumberOptions) => void
 	) {
 		super(app);
@@ -125,6 +129,7 @@ class EnhancedRenumberConfirmationModal extends Modal {
 		this.onConfirm = onConfirm;
 		this.gaps = gaps;
 		this.unreferencedFootnotes = unreferencedFootnotes;
+		this.isOutOfOrder = isOutOfOrder;
 	}
 
 	onOpen() {
@@ -212,6 +217,34 @@ class EnhancedRenumberConfirmationModal extends Modal {
 			});
 		}
 
+		// Condition 3: Out-of-order footnotes
+		if (this.isOutOfOrder) {
+			hasIssues = true;
+			const reorderSection = issuesContainer.createEl('div', {
+				cls: 'renumber-issue-section'
+			});
+
+			const reorderCheckboxContainer = reorderSection.createEl('label', {
+				cls: 'renumber-checkbox-container'
+			});
+
+			this.reorderByPositionCheckbox = reorderCheckboxContainer.createEl('input', {
+				type: 'checkbox',
+				cls: 'renumber-checkbox'
+			});
+			this.reorderByPositionCheckbox.checked = true;
+
+			reorderCheckboxContainer.createEl('span', {
+				text: 'Reorder footnotes by text position',
+				cls: 'renumber-checkbox-label'
+			});
+
+			reorderSection.createEl('p', {
+				text: 'One or more footnote references are out of sequence relative to their position in the document (e.g. a manually added footnote placed between two existing ones). This will renumber all footnotes in the order they appear in the text.',
+				cls: 'renumber-issue-detail'
+			});
+		}
+
 		if (!hasIssues) {
 			contentEl.createEl('p', {
 				text: 'No footnote issues found.',
@@ -253,11 +286,12 @@ class EnhancedRenumberConfirmationModal extends Modal {
 		confirmBtn.onclick = () => {
 			const options: RenumberOptions = {
 				fixGaps: this.fixGapsCheckbox?.checked || false,
-				removeUnreferenced: this.removeUnreferencedCheckbox?.checked || false
+				removeUnreferenced: this.removeUnreferencedCheckbox?.checked || false,
+				reorderByPosition: this.reorderByPositionCheckbox?.checked || false
 			};
 
 			// Validate that at least one option is selected
-			if (!options.fixGaps && !options.removeUnreferenced) {
+			if (!options.fixGaps && !options.removeUnreferenced && !options.reorderByPosition) {
 				// Show error message
 				const existingError = contentEl.querySelector('.renumber-error');
 				if (existingError) {
@@ -284,7 +318,8 @@ class EnhancedRenumberConfirmationModal extends Modal {
 		// Enable/disable confirm button based on selections
 		const updateConfirmButton = () => {
 			const hasSelection = (this.fixGapsCheckbox?.checked || false) ||
-				(this.removeUnreferencedCheckbox?.checked || false);
+				(this.removeUnreferencedCheckbox?.checked || false) ||
+				(this.reorderByPositionCheckbox?.checked || false);
 			confirmBtn.disabled = !hasSelection;
 
 			if (hasSelection) {
@@ -300,6 +335,9 @@ class EnhancedRenumberConfirmationModal extends Modal {
 		}
 		if (this.removeUnreferencedCheckbox) {
 			this.removeUnreferencedCheckbox.addEventListener('change', updateConfirmButton);
+		}
+		if (this.reorderByPositionCheckbox) {
+			this.reorderByPositionCheckbox.addEventListener('change', updateConfirmButton);
 		}
 
 		// Initial button state
@@ -3058,8 +3096,17 @@ export default class FootnotesManagerPlugin extends Plugin {
 			// Check for unreferenced footnotes
 			const unreferencedFootnotes = footnotes.filter(f => f.references.length === 0);
 
+			// Check for out-of-order footnotes (numbers not ascending by text position)
+			const sortedByPosition = [...referencedFootnotes].sort((a, b) =>
+				(a.references[0]?.startPos ?? 0) - (b.references[0]?.startPos ?? 0)
+			);
+			const isOutOfOrder = sortedByPosition.some((f, i) => {
+				if (i === 0) return false;
+				return parseInt(f.number) < parseInt(sortedByPosition[i - 1].number);
+			});
+
 			// If no issues found
-			if (gaps.length === 0 && unreferencedFootnotes.length === 0) {
+			if (gaps.length === 0 && unreferencedFootnotes.length === 0 && !isOutOfOrder) {
 				new Notice('No footnote issues found - numbering is sequential and all footnotes are referenced');
 				return;
 			}
@@ -3070,6 +3117,7 @@ export default class FootnotesManagerPlugin extends Plugin {
 				this,
 				gaps,
 				unreferencedFootnotes,
+				isOutOfOrder,
 				(options: RenumberOptions) => {
 					this.performEnhancedRenumbering(activeEditor!, footnotes, options);
 				}
@@ -3125,8 +3173,8 @@ export default class FootnotesManagerPlugin extends Plugin {
 			processedFootnotes = this.extractFootnotes(content);
 		}
 
-		// Step 2: Fix gaps if requested
-		if (options.fixGaps && processedFootnotes.length > 0) {
+		// Step 2: Fix gaps or reorder by position if requested (same algorithm)
+		if ((options.fixGaps || options.reorderByPosition) && processedFootnotes.length > 0) {
 			// Sort footnotes by their first reference position to maintain order
 			const sortedFootnotes = [...processedFootnotes].sort((a, b) => {
 				const aFirstRef = a.references[0];
@@ -3195,6 +3243,10 @@ export default class FootnotesManagerPlugin extends Plugin {
 
 		if (options.fixGaps) {
 			actions.push('footnote numbering gaps fixed');
+		}
+
+		if (options.reorderByPosition) {
+			actions.push('footnotes reordered by text position');
 		}
 
 		if (actions.length > 0) {
