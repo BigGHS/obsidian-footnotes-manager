@@ -240,7 +240,7 @@ class EnhancedRenumberConfirmationModal extends Modal {
 			});
 
 			reorderSection.createEl('p', {
-				text: 'One or more footnote references are out of sequence relative to their position in the document (e.g. a manually added footnote placed between two existing ones). This will renumber all footnotes in the order they appear in the text.',
+				text: 'Footnotes are out of sequence — either a reference appears out of order in the text, or a definition is not physically sorted with the others (e.g. added manually at the end). This will renumber all footnotes in the order they appear in the text and sort the definitions to match.',
 				cls: 'renumber-issue-detail'
 			});
 		}
@@ -3096,14 +3096,25 @@ export default class FootnotesManagerPlugin extends Plugin {
 			// Check for unreferenced footnotes
 			const unreferencedFootnotes = footnotes.filter(f => f.references.length === 0);
 
-			// Check for out-of-order footnotes (numbers not ascending by text position)
-			const sortedByPosition = [...referencedFootnotes].sort((a, b) =>
+			// Check for out-of-order references (numbers not ascending by text position)
+			const sortedByRefPosition = [...referencedFootnotes].sort((a, b) =>
 				(a.references[0]?.startPos ?? 0) - (b.references[0]?.startPos ?? 0)
 			);
-			const isOutOfOrder = sortedByPosition.some((f, i) => {
+			const refsOutOfOrder = sortedByRefPosition.some((f, i) => {
 				if (i === 0) return false;
-				return parseInt(f.number) < parseInt(sortedByPosition[i - 1].number);
+				return parseInt(f.number) < parseInt(sortedByRefPosition[i - 1].number);
 			});
+
+			// Check for out-of-order definitions (definitions not physically sorted by number)
+			const sortedByDefPosition = [...referencedFootnotes].sort((a, b) =>
+				a.definition.startPos - b.definition.startPos
+			);
+			const defsOutOfOrder = sortedByDefPosition.some((f, i) => {
+				if (i === 0) return false;
+				return parseInt(f.number) < parseInt(sortedByDefPosition[i - 1].number);
+			});
+
+			const isOutOfOrder = refsOutOfOrder || defsOutOfOrder;
 
 			// If no issues found
 			if (gaps.length === 0 && unreferencedFootnotes.length === 0 && !isOutOfOrder) {
@@ -3127,6 +3138,38 @@ export default class FootnotesManagerPlugin extends Plugin {
 			this.debug('Error in renumberFootnotes:', error);
 			new Notice('Error accessing document: ' + error.message);
 		}
+	}
+
+	private sortDefinitionsInPlace(content: string): string {
+		const definitionRegex = /^\[\^([\w-]+)\]:\s*(.*)$/gm;
+		const definitions: Array<{ number: string; text: string; startPos: number; endPos: number }> = [];
+		let match;
+
+		while ((match = definitionRegex.exec(content)) !== null) {
+			definitions.push({
+				number: match[1],
+				text: match[0],
+				startPos: match.index,
+				endPos: match.index + match[0].length
+			});
+		}
+
+		if (definitions.length <= 1) return content;
+
+		const alreadySorted = definitions.every((def, i) =>
+			i === 0 || parseInt(def.number) > parseInt(definitions[i - 1].number)
+		);
+		if (alreadySorted) return content;
+
+		const sorted = [...definitions].sort((a, b) => parseInt(a.number) - parseInt(b.number));
+
+		// Swap text at each position working backwards to preserve indices
+		for (let i = definitions.length - 1; i >= 0; i--) {
+			const pos = definitions[i];
+			content = content.substring(0, pos.startPos) + sorted[i].text + content.substring(pos.endPos);
+		}
+
+		return content;
 	}
 
 	private performEnhancedRenumbering(editor: Editor, footnotes: FootnoteData[], options: RenumberOptions) {
@@ -3229,6 +3272,9 @@ export default class FootnotesManagerPlugin extends Plugin {
 				content = before + replacement.newText + after;
 			});
 
+			// Sort definitions into sequential order by number
+			content = this.sortDefinitionsInPlace(content);
+
 			editor.setValue(content);
 		}
 
@@ -3254,6 +3300,8 @@ export default class FootnotesManagerPlugin extends Plugin {
 		}
 
 		new Notice(message);
+		this.skipNextRefresh = false;
+		this.skipRefreshUntil = 0;
 		this.refreshFootnotesView();
 	}
 	async loadSettings() {
